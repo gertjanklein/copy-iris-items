@@ -10,6 +10,7 @@ Items to download can be classes, macs, CSP files, etc. Items are saved in UDL,
 not XML. The encoding used is UTF-8, except for CSP items not recognised by
 IRIS as text (and, obviously, binary files like images); these are saved as-is.
 
-This application uses part of the Atelier API that is used for the same purpose
+The application is a Python (3.7) script, and uses only the Python standard
+library. It uses part of the Atelier API that is used for the same purpose
 by InterSystems Atelier.
 
