@@ -21,7 +21,7 @@ def main(inifile):
     setup_logging(inifile)
     
     # Log unhandled exceptions
-    # sys.excepthook = unhandled_exception
+    sys.excepthook = unhandled_exception
 
     # Get configuration
     config = read_cfg(inifile)
