@@ -6,7 +6,7 @@ import os
 from os.path import dirname, join, isabs, abspath, exists, splitext, isfile
 import logging
 from configparser import ConfigParser
-import datetime
+import datetime, time
 import re
 import base64
 import urllib.request as urq
@@ -212,7 +212,7 @@ def determine_filename(config, item):
         cspdir = config['cspdir']
         return join(cspdir, *parts, name)
     
-    outdir = config['dir']
+    # Non-CSP item (cls, mac, inc, ...)
     if config['subdirs']:
         # Non-CSP, make packages directories.
         parts = name.split('.')
@@ -222,6 +222,7 @@ def determine_filename(config, item):
         # Non-CSP, packages as part of filename.
         parts = []
     
+    outdir = config['dir']
     return join(outdir, *parts, name)
 
 
@@ -269,6 +270,20 @@ def save_item(config, item):
         # Binary document (e.g. image from CSP application)
         with open(fname, 'wb') as f:
             f.write(data)
+    
+    # Set modified date/time to that of item in IRIS
+    set_file_datetime(fname, item['ts'])
+
+
+def set_file_datetime(filename, timestamp):
+    """ Sets a file's modified date/time """
+
+    # Convert timestamp string to datetime object
+    dt = datetime.datetime.fromisoformat(timestamp)
+    # Convert to seconds since epoch
+    tm = time.mktime(dt.timetuple())
+    # Set access end modified times
+    os.utime(filename, (tm, tm))
 
 
 def setup_urllib(config):
