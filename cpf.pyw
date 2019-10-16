@@ -50,7 +50,8 @@ def main(inifile):
         save_item(config, item)
     
     # Save cookies for reuse if we call the same server quickly again
-    config['cookiejar'].save(ignore_discard=True)
+    if config['savecookies']:
+        config['cookiejar'].save(ignore_discard=True)
 
     msgbox(f"Copied {len(items)} items.")
 
@@ -61,7 +62,7 @@ def read_cfg(inifile):
     # Get config parser that allows keys without values, and preserves case
     ini = ConfigParser(allow_no_value=True)
     ini.optionxform = str
-    ini.read(inifile)
+    ini.read(inifile, 'UTF-8')
 
     # Get project specifications
     specs = [ spec for spec in ini['Project'].keys() ]
@@ -104,6 +105,10 @@ def read_cfg(inifile):
     cookiefile = join(dirname(__file__), cookiefile)
     cookiejar = http.cookiejar.LWPCookieJar(cookiefile, delayload=False)
 
+    # File encoding, defaulting to UTF-8
+    encoding = ini['Local'].get('encoding')
+    if encoding == '': encoding = 'UTF-8'
+
     # Create dict with configuration values
     config = {
         'svr': ini['Server'],
@@ -112,7 +117,9 @@ def read_cfg(inifile):
         'dir': outdir,
         'cspdir': cspdir,
         'subdirs': ini['Local'].getboolean('subdirs', fallback=True),
-        'cookiejar': cookiejar
+        'encoding': encoding,
+        'cookiejar': cookiejar,
+        'savecookies': ini['Local'].getboolean('cookies', fallback=False)
     }
 
     return config
@@ -263,8 +270,8 @@ def save_item(config, item):
     os.makedirs(dir, exist_ok=True)
 
     if type(data) != bytes:
-        # Text document; store in UTF-8
-        with open(fname, 'wt', encoding='UTF-8') as f:
+        # Text document; store in specified encoding (default UTF-8)
+        with open(fname, 'wt', encoding=config['encoding']) as f:
             f.write(data)
     else:
         # Binary document (e.g. image from CSP application)
