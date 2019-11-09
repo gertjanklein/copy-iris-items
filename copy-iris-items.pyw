@@ -3,7 +3,7 @@
 
 import sys
 import os
-from os.path import dirname, join, isabs, abspath, exists, splitext, isfile
+from os.path import dirname, join, isabs, abspath, exists, splitext, isfile, basename
 import logging
 from configparser import ConfigParser
 import datetime, time
@@ -64,8 +64,41 @@ def read_cfg(inifile):
     ini.optionxform = str
     ini.read(inifile, 'UTF-8')
 
+    # Return configuration as a dictionary
+    config = {}
+    config['svr'] = ini['Server']
+
     # Get project specifications
-    specs = [ spec for spec in ini['Project'].keys() ]
+    config['specs'], config['types'] = get_specs(ini['Project'].keys())
+
+    # Directories are relative to the ini file, not the 'current' dir:
+    basedir = dirname(inifile)
+    tplvars = {'{ininame}': splitext(basename(inifile))[0] }
+    config['dir'] = determine_dir(ini['Local'].get('dir'), '{ininame}\\src', basedir, tplvars)
+    config['cspdir'] = determine_dir(ini['Local'].get('cspdir'), '{ininame}\\csp', basedir, tplvars)
+
+    # Cookie file next to this one. Keep one file per IRIS instance.
+    # Keep jar in config structure so we can save it at the end of the program.
+    svr = ini['Server']
+    cookiefile = f"cookies;{svr['host']};{svr['port']}.txt"
+    cookiefile = join(dirname(__file__), cookiefile)
+    config['cookiejar'] = http.cookiejar.LWPCookieJar(cookiefile, delayload=False)
+
+    # File encoding, defaulting to UTF-8
+    encoding = ini['Local'].get('encoding')
+    config['encoding'] = encoding if encoding else 'UTF-8'
+
+    # Flags
+    config['subdirs'] = ini['Local'].getboolean('subdirs', fallback=True)
+    config['savecookies'] = ini['Local'].getboolean('cookies', fallback=False)
+
+    return config
+
+
+def get_specs(input):
+    """ Get project specification and convert to regular expressions. """
+
+    specs = [ spec for spec in input ]
 
     # Determine the types of items we're interested in
     types = { 'csp' if '/' in spec else spec.rsplit('.', maxsplit=1)[1] for spec in specs }
@@ -85,44 +118,19 @@ def read_cfg(inifile):
         spec = spec.replace('*', '.*')
         regex = re.compile(spec)
         regexes[stype].append(regex)
+    
+    return regexes, types
 
-    # Determine base output directory
-    outdir = ini['Local']['dir']
-    if not isabs(outdir):
-        outdir = join(dirname(inifile), outdir)
-    outdir = abspath(outdir)
 
-    # Determine CSP output directory
-    cspdir = ini['Local']['cspdir']
-    if not isabs(cspdir):
-        cspdir = join(dirname(inifile), cspdir)
-    cspdir = abspath(cspdir)
+def determine_dir(input, default, basedir, replacements):
+    """ Determines directory and makes it an absolute path. """
 
-    # Cookie file next to this one. Keep one file per IRIS instance.
-    # Keep jar in config structure so we can save it at the end of the program.
-    svr = ini['Server']
-    cookiefile = f"cookies;{svr['host']};{svr['port']}.txt"
-    cookiefile = join(dirname(__file__), cookiefile)
-    cookiejar = http.cookiejar.LWPCookieJar(cookiefile, delayload=False)
-
-    # File encoding, defaulting to UTF-8
-    encoding = ini['Local'].get('encoding')
-    if encoding == '': encoding = 'UTF-8'
-
-    # Create dict with configuration values
-    config = {
-        'svr': ini['Server'],
-        'specs': regexes,
-        'types': types,
-        'dir': outdir,
-        'cspdir': cspdir,
-        'subdirs': ini['Local'].getboolean('subdirs', fallback=True),
-        'encoding': encoding,
-        'cookiejar': cookiejar,
-        'savecookies': ini['Local'].getboolean('cookies', fallback=False)
-    }
-
-    return config
+    result = input if input else default
+    for name in replacements:
+        result = result.replace(name, replacements[name])
+    if not isabs(result):
+        result = join(basedir, result)
+    return result
 
 
 def get_modified_items(config, itemtype):
