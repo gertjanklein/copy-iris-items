@@ -40,8 +40,12 @@ unzip, and use the script directly:
 copy-iris-items.pyw <project.ini>
 ```
 
-It is easiest to create a shortcut to the program next to the .ini-file,
-and drag and drop the .ini-file on the shortcut when you want to run the
-program with that .ini-file.
+If you don't have Python installed, you can download a binary release
+for Windows
+[here](https://github.com/gertjanklein/copy-iris-items/releases).
+
+It is easiest to create a shortcut to the program (either script or
+binary) next to the .ini-file, and drag and drop the .ini-file on the
+shortcut when you want to run the program with that .ini-file.
 
 
