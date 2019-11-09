@@ -269,15 +269,22 @@ def save_item(config, item):
     dir = dirname(fname)
     os.makedirs(dir, exist_ok=True)
 
-    if type(data) != bytes:
-        # Text document; store in specified encoding (default UTF-8)
-        with open(fname, 'wt', encoding=config['encoding']) as f:
-            f.write(data)
-    else:
-        # Binary document (e.g. image from CSP application)
-        with open(fname, 'wb') as f:
-            f.write(data)
-    
+    # Write the data to the output file. If this fails, catch the exception
+    # to log the name of the file we tried to write to, and reraise; function
+    # unhandled_exception will log the stack trace.
+    try:
+        if type(data) != bytes:
+            # Text document; store in specified encoding (default UTF-8)
+            with open(fname, 'wt', encoding=config['encoding']) as f:
+                f.write(data)
+        else:
+            # Binary document (e.g. image from CSP application)
+            with open(fname, 'wb') as f:
+                f.write(data)
+    except BaseException as e:
+        logging.error(f"\nException detected writing to file {fname}")
+        raise
+
     # Set modified date/time to that of item in IRIS
     set_file_datetime(fname, item['ts'])
 
