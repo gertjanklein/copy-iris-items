@@ -289,7 +289,7 @@ def save_item(config, item):
             # Binary document (e.g. image from CSP application)
             with open(fname, 'wb') as f:
                 f.write(data)
-    except BaseException as e:
+    except Exception:
         logging.error(f"\nException detected writing to file {fname}")
         raise
 
