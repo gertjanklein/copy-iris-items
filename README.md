@@ -36,7 +36,7 @@ appropriate version of Python installed, you can just
 [download it](https://github.com/gertjanklein/copy-iris-items/archive/master.zip),
 unzip, and use the script directly:
 
-```
+```txt
 copy-iris-items.pyw <project.ini>
 ```
 
@@ -47,5 +47,3 @@ for Windows
 It is easiest to create a shortcut to the program (either script or
 binary) next to the .ini-file, and drag and drop the .ini-file on the
 shortcut when you want to run the program with that .ini-file.
-
-
