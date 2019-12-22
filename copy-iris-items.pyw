@@ -3,7 +3,7 @@
 
 import sys
 import os
-from os.path import dirname, join, isabs, abspath, exists, splitext, isfile, basename
+from os.path import dirname, join, isabs, abspath, exists, splitext, isfile, basename, isdir
 import logging
 from configparser import ConfigParser
 import datetime, time
@@ -12,6 +12,8 @@ import base64
 import urllib.request as urq
 import http.cookiejar
 import json
+
+import data_handler
 
 
 def main(inifile):
@@ -29,8 +31,13 @@ def main(inifile):
     # Setup authorization and cookie handling
     setup_urllib(config)
 
+    # If needed, make sure we have the support code to retrive data exports
+    if config['enssettings'] or config['lookup']:
+        data_handler.init(config['svr'])
+
     # Log appends; create visible separation for this run
-    logging.info(f"\n\n===== Starting sync at {str(datetime.datetime.now()).split('.')[0]}")
+    now = str(datetime.datetime.now())
+    logging.info(f"\n\n===== Starting sync at {now.split('.')[0]}")
 
     # Get list of all items we're interested in
     items = []
@@ -48,12 +55,22 @@ def main(inifile):
     # Save each one to disk
     for item in items:
         save_item(config, item)
+    count = len(items)
+
+    # Save Ensemble deployable settings and lookup tables, if asked
+    if config['enssettings']:
+        count += save_deployable_settings(config)
+    if config['lookup']:
+        count += save_lookup_tables(config)
     
     # Save cookies for reuse if we call the same server quickly again
     if config['savecookies']:
         config['cookiejar'].save(ignore_discard=True)
 
-    msgbox(f"Copied {len(items)} items.")
+    # Cleanup support code
+    data_handler.cleanup(config['svr'])
+
+    msgbox(f"Copied {count} items.")
 
 
 def read_cfg(inifile):
@@ -72,10 +89,12 @@ def read_cfg(inifile):
     config['specs'], config['types'] = get_specs(ini['Project'].keys())
 
     # Directories are relative to the ini file, not the 'current' dir:
-    basedir = dirname(inifile)
-    tplvars = {'{ininame}': splitext(basename(inifile))[0] }
-    config['dir'] = determine_dir(ini['Local'].get('dir'), '{ininame}\\src', basedir, tplvars)
-    config['cspdir'] = determine_dir(ini['Local'].get('cspdir'), '{ininame}\\csp', basedir, tplvars)
+    basedir = abspath(dirname(inifile))
+    ininame = splitext(basename(inifile))[0]
+    tpl = { 'ininame': ininame }
+    config['dir'] = determine_dir(ini['Local'].get('dir'), join(ininame, 'src'), basedir, tpl)
+    config['cspdir'] = determine_dir(ini['Local'].get('cspdir'), join(ininame, 'csp'), basedir, tpl)
+    config['datadir'] = determine_dir(ini['Local'].get('datadir'), join(ininame, 'data'), basedir, tpl)
 
     # Cookie file next to this one. Keep one file per IRIS instance.
     # Keep jar in config structure so we can save it at the end of the program.
@@ -91,6 +110,9 @@ def read_cfg(inifile):
     # Flags
     config['subdirs'] = ini['Local'].getboolean('subdirs', fallback=True)
     config['savecookies'] = ini['Local'].getboolean('cookies', fallback=False)
+
+    config['enssettings'] = ini['Data'].get('enssettings')
+    config['lookup'] = ini['Data'].get('lookup')
 
     return config
 
@@ -122,12 +144,11 @@ def get_specs(input):
     return regexes, types
 
 
-def determine_dir(input, default, basedir, replacements):
+def determine_dir(input, default, basedir, tpl):
     """ Determines directory and makes it an absolute path. """
 
     result = input if input else default
-    for name in replacements:
-        result = result.replace(name, replacements[name])
+    result = result.format(**tpl)
     if not isabs(result):
         result = join(basedir, result)
     return result
@@ -264,6 +285,56 @@ def retrieve_item(config, item):
         content = base64.decodebytes(content.encode())
     
     return content
+
+
+def save_deployable_settings(config):
+    """ Retrieves and saves Ensemble deployable config settings. """
+    
+    logging.info(f"Retrieving and saving Ens.Config.DefaultSettings.esd")
+    
+    data = data_handler.get_export(config['svr'], 'Ens.Config.DefaultSettings.esd')
+    if not data:
+        return 0
+    
+    # Make sure the output directory exists
+    if not isdir(config['datadir']):
+        os.makedirs(config['datadir'])
+    
+    # Filename for settings
+    fname = join(config['datadir'], config['enssettings'])
+    with open(fname, 'w', encoding='UTF-8') as f:
+        f.write(data + '\n')
+    
+    return 1
+
+
+def save_lookup_tables(config):
+    tables = [ x.strip() for x in config['lookup'].split(',') ]
+    count = 0
+    for table in tables:
+        if not table.lower().endswith('.lut'):
+            table = table + '.LUT'
+        # Extension must be uppercase or mgmt portal won't recognize it
+        if not table.endswith('.LUT'):
+            table = table[:-4] + '.LUT'
+
+        logging.info(f"Retrieving and saving {table}")
+
+        data = data_handler.get_export(config['svr'], table)
+        if not data:
+            logging.info(f"  {table} contains no data, skipping.")
+            continue
+        
+        # Make sure the output directory exists
+        if not isdir(config['datadir']):
+            os.makedirs(config['datadir'])
+    
+        fname = join(config['datadir'], table[:-3] + 'lut')
+        with open(fname, 'w', encoding='UTF-8') as f:
+            f.write(data + '\n')
+        count += 1
+    
+    return count
 
 
 def save_item(config, item):
