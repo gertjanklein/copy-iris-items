@@ -2,6 +2,23 @@
 
 Copies items from a remote Caché/IRIS server to a local directory.
 
+## Motivation
+
+This program was written to make it possible to work with (IRIS) Studio
+connecting to a remote server/namespace, that is worked on by multiple
+people, while (each) maintaining a local repository or working copy.
+When code one person is working on is ready to check in, they can:
+
+* update their repository from e.g. github
+* run this program to get the latest code from the server
+* check in and optionally push their code
+
+For this way of working it is essential that the server namespace is
+leading, not the filesystem. (Atelier takes the opposite approch, making
+it unsuitable here.)
+
+## Description
+
 Intended use is to sync a local directory (e.g. a git repository) with a
 remote Caché/IRIS server. This is done by downloading items specified in
 an INI file. After the files are downloaded, a local tool can be used to
