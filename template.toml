@@ -1,0 +1,80 @@
+
+##### Server connection details: the server to retrieve the items from.
+[Server]
+host = ""
+port = ""
+namespace = ""
+user = ""
+password = ""
+https = false
+
+
+##### What belongs to this project
+[Project]
+# Specify items belonging to the project here. Asterisks are
+# supported. Examples:
+# - All classes in package Strix:
+#   Strix.*.cls
+# - All include files:
+#   *.inc
+# CSP files are supported as well, and will be placed in the csp
+# directory specified below.
+# - All files in CSP application /csp/dev:
+#   /csp/dev/*
+# - Only CSP files, images, and css, nothing else:
+#   /app/*.csp
+#   /app/*.css
+#   /app/*.js
+# Exclude rules are prefixed with a minus; assuming the above
+# rules, the following then excludes all classes in package Strix.Work,
+# and temporary images:
+#   -Strix.Work.*.cls
+#   -/csp/dev/tmp*.jpg
+items = [
+]
+
+# Ensemble Data Lookup Tables to include. Will be saved as the name
+# of the table with a ".lut" extension. The lookup table can have, but
+# does not require, a '.lut' extension. Wildcards as with items are
+# supported.
+lookup = [
+]
+
+[Project.enssettings]
+# Ensemble/interoperability: system default settings.
+name = "Ens.Config.DefaultSettings.esd"
+# Whether to strip values from the settings.
+strip = true
+
+
+##### Where and how to save things.
+[Local]
+# Directory to place files in. Occurances of the string {cfgname} will
+# be replaced by the name of the configuration file. Default is {cfgname}\src.
+dir = "{cfgname}\\src"
+
+# Directory for CSP files, if any. This should normally be kept outside
+# the non-CSP items directory, so that one can be used with
+# $System.OBJ.ImportDir(). Occurances of the string {cfgname} will
+# be replaced by the name of the configuration file. Default is {cfgname}\csp.
+cspdir = "{cfgname}\\csp"
+
+# Directory for data files, if any. Datafiles are e.g. data lookup table
+# exports. Occurances of the string {cfgname} will be replaced by the
+# name of the configuration file. Default is {cfgname}\data.
+datadir = "{cfgname}\\data"
+
+# Encoding for (non-binary) files; use valid Python encoding
+# string, e.g. UTF-8 or CP1252. Default is UTF-8.
+encoding = "UTF-8"
+
+# Whether to make directories for packages (true) or not (false)
+# If true a.b.c.cls will become a\b\c.cls.
+subdirs = true
+
+# Whether to save a file (per connection) with cookies, so that
+# the CSP licence can be retained between runs. This is only needed
+# if many successive runs are expected, and the CSP license allocation
+# time is large.
+cookies = false
+

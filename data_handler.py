@@ -13,8 +13,7 @@ CREATE_EXPORT_PROC = """
 CREATE PROCEDURE GetExport(name SYSNAME) FOR Tmp.CII.Procs RETURNS CHAR LANGUAGE OBJECTSCRIPT
 {
   Set Stream = ##class(%Stream.TmpCharacter).%New()
-  Set sc = $System.OBJ.ExportToStream(name, Stream, "d")
-  If 'sc Throw ##class(%Exception.StatusException).CreateFromStatus(sc)
+  Do $System.OBJ.ExportToStream(name, Stream, "d")
   Set a = []
   For  Quit:Stream.AtEnd  Do a.%Push(Stream.ReadLine())
   Return a.%ToJSON()
@@ -25,9 +24,10 @@ CREATE PROCEDURE GetExport(name SYSNAME) FOR Tmp.CII.Procs RETURNS CHAR LANGUAGE
 created = False
 
 
-def get_export(svr:dict, name:str):
+def get_export(svr, name:str):
     # URL for query actions
-    url = f"http://{svr['host']}:{svr['port']}/api/atelier/v1/{svr['namespace']}/action/query"
+    scheme = 'https' if svr.https else 'http'
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
     
     # Get export for the requested name
     query = f"SELECT Tmp_CII.GetExport('{name}') AS result"
@@ -45,9 +45,10 @@ def get_export(svr:dict, name:str):
     return result
 
 
-def list_lookup_tables(svr:dict, specs:list):
+def list_lookup_tables(svr, specs:list):
     # URL for query actions
-    url = f"http://{svr['host']}:{svr['port']}/api/atelier/v1/{svr['namespace']}/action/query"
+    scheme = 'https' if svr.https else 'http'
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
 
     # Build query for tables matching spec(s)
     conds = []
@@ -79,11 +80,12 @@ def list_lookup_tables(svr:dict, specs:list):
     return tables
 
 
-def init(svr:dict):
+def init(svr):
     global created
 
     # URL for query actions
-    url = f"http://{svr['host']}:{svr['port']}/api/atelier/v1/{svr['namespace']}/action/query"
+    scheme = 'https' if svr.https else 'http'
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
     
     # Check whether the class containing the stored procedure exists
     query = "SELECT 1 FROM %Dictionary.ClassDefinition WHERE ID = 'Tmp.CII.Procs'"
@@ -117,7 +119,8 @@ def cleanup(svr:dict):
         return
     
     # URL for query actions
-    url = f"http://{svr['host']}:{svr['port']}/api/atelier/v1/{svr['namespace']}/action/query"
+    scheme = 'https' if svr.https else 'http'
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
     
     # Drop the stored procedure we created
     query = "DROP PROCEDURE Tmp_CII.GetExport"

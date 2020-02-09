@@ -3,37 +3,38 @@
 
 import sys
 import os
-from os.path import dirname, join, isabs, abspath, exists, splitext, isfile, basename, isdir
+from os.path import join, isdir, isfile, exists, dirname, abspath, splitext
 import logging
-from configparser import ConfigParser
 import datetime, time
 import re
 import base64
 import urllib.request as urq
-import http.cookiejar
 import json
+import xml.etree.ElementTree as ET
 
 import data_handler
+from config import get_config
 
 
-def main(inifile):
+def main(cfgfile):
     """ Loads items as specified in the ini file """
 
     # Set up logging to file next to ini file
-    setup_logging(inifile)
+    setup_logging(cfgfile)
     
     # Log unhandled exceptions
     sys.excepthook = unhandled_exception
 
     # Get configuration
-    config = read_cfg(inifile)
+    config = get_config(cfgfile)
 
     # Setup authorization and cookie handling
     setup_urllib(config)
 
-    # If needed, make sure we have the support code to retrive data exports
-    if config['enssettings'] or config['lookup']:
-        data_handler.init(config['svr'])
+    # If needed, make sure we have the support code to retrieve data exports
+    project = config.input.Project
+    if project.enssettings.name or project.lookup:
+        data_handler.init(config.input.Server)
 
     # Log appends; create visible separation for this run
     now = str(datetime.datetime.now())
@@ -41,7 +42,7 @@ def main(inifile):
 
     # Get list of all items we're interested in
     items = []
-    for tp in config['types']:
+    for tp in config.types:
         # Get server items for this type
         if tp != 'csp':
             # This call is way faster than get_items_for_type
@@ -58,100 +59,19 @@ def main(inifile):
     count = len(items)
 
     # Save Ensemble deployable settings and lookup tables, if asked
-    if config['enssettings']:
+    if project.enssettings.name:
         count += save_deployable_settings(config)
-    if config['lookup']:
+    if project.lookup:
         count += save_lookup_tables(config)
     
     # Save cookies for reuse if we call the same server quickly again
-    if config['savecookies']:
+    if config.input.Local.cookies:
         config['cookiejar'].save(ignore_discard=True)
 
     # Cleanup support code
-    data_handler.cleanup(config['svr'])
+    data_handler.cleanup(config.input.Server)
 
     msgbox(f"Copied {count} items.")
-
-
-def read_cfg(inifile):
-    """ Reads server and project specifications from the ini file """
-
-    # Get config parser that allows keys without values, and preserves case
-    ini = ConfigParser(allow_no_value=True)
-    ini.optionxform = str
-    ini.read(inifile, 'UTF-8')
-
-    # Return configuration as a dictionary
-    config = {}
-    config['svr'] = ini['Server']
-
-    # Get project specifications
-    config['specs'], config['types'] = get_specs(ini['Project'].keys())
-
-    # Directories are relative to the ini file, not the 'current' dir:
-    basedir = abspath(dirname(inifile))
-    ininame = splitext(basename(inifile))[0]
-    tpl = { 'ininame': ininame }
-    config['dir'] = determine_dir(ini['Local'].get('dir'), join(ininame, 'src'), basedir, tpl)
-    config['cspdir'] = determine_dir(ini['Local'].get('cspdir'), join(ininame, 'csp'), basedir, tpl)
-    config['datadir'] = determine_dir(ini['Local'].get('datadir'), join(ininame, 'data'), basedir, tpl)
-
-    # Cookie file next to this one. Keep one file per IRIS instance.
-    # Keep jar in config structure so we can save it at the end of the program.
-    svr = ini['Server']
-    cookiefile = f"cookies;{svr['host']};{svr['port']}.txt"
-    cookiefile = join(dirname(__file__), cookiefile)
-    config['cookiejar'] = http.cookiejar.LWPCookieJar(cookiefile, delayload=False)
-
-    # File encoding, defaulting to UTF-8
-    encoding = ini['Local'].get('encoding')
-    config['encoding'] = encoding if encoding else 'UTF-8'
-
-    # Flags
-    config['subdirs'] = ini['Local'].getboolean('subdirs', fallback=True)
-    config['savecookies'] = ini['Local'].getboolean('cookies', fallback=False)
-
-    config['enssettings'] = ini['Data'].get('enssettings')
-    config['lookup'] = ini['Data'].get('lookup')
-
-    return config
-
-
-def get_specs(input):
-    """ Get project specification and convert to regular expressions. """
-
-    specs = [ spec for spec in input ]
-
-    # Determine the types of items we're interested in
-    types = { 'csp' if '/' in spec else spec.rsplit('.', maxsplit=1)[1] for spec in specs }
-
-    # Convert specifications to regexes for matching
-    regexes = { '+': [], '-': [] }
-    for spec in specs:
-        # Exclusion spec?
-        if spec[0] == '-':
-            spec = spec[1:]
-            stype = '-'
-        else:
-            stype = '+'
-        # Escape dots in spec
-        spec = spec.replace('.', '\\.')
-        # Create valid regex for star
-        spec = spec.replace('*', '.*')
-        regex = re.compile(spec)
-        regexes[stype].append(regex)
-    
-    return regexes, types
-
-
-def determine_dir(input, default, basedir, tpl):
-    """ Determines directory and makes it an absolute path. """
-
-    result = input if input else default
-    result = result.format(**tpl)
-    if not isabs(result):
-        result = join(basedir, result)
-    return result
 
 
 def get_modified_items(config, itemtype):
@@ -160,8 +80,9 @@ def get_modified_items(config, itemtype):
     logging.info(f"Retrieving available items of type {itemtype}")
 
     # Assemble URL and create request
-    svr = config['svr']
-    url = f"http://{svr['host']}:{svr['port']}/api/atelier/v1/{svr['namespace']}/modified/{itemtype}?generated=0"
+    svr = config.input.Server
+    scheme = 'https' if svr.https else 'http'
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/modified/{itemtype}?generated=0"
     rq = urq.Request(url, data=b'[]', headers={'Content-Type': 'application/json'}, method='POST')
     
     # Get and convert to JSON
@@ -172,13 +93,14 @@ def get_modified_items(config, itemtype):
 
 
 def get_items_for_type(config, itemtype):
-    """ Retrieves all CSP items from the server """
+    """ Retrieves all items of a given type from the server """
 
     logging.info(f"Retrieving available {itemtype} items")
     
     # Assemble URL
-    svr = config['svr']
-    url = f"http://{svr['host']}:{svr['port']}/api/atelier/v1/{svr['namespace']}/docnames/{itemtype}"
+    svr = config.input.Server
+    scheme = 'https' if svr.https else 'http'
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/docnames/{itemtype}"
     
     # Get and convert to JSON
     with urq.urlopen(url) as rsp:
@@ -201,7 +123,7 @@ def extract_items(config, result, items):
             if doc.get('gen', False): continue
             if doc.get('depl', False): continue
             # Skip item if it doesn't match the project spec
-            if not check_item(config['specs'], doc['name']): continue
+            if not check_item(config.itemsrx, doc['name']): continue
             # Remove irrelevant data
             del doc['gen']
             del doc['depl']
@@ -212,8 +134,9 @@ def extract_items(config, result, items):
 def extract_csp_items(config, result, items):
     """ Extract items from service call result and store in list. """
     
+    specs = config.itemsrx
     for item in result:
-        if not check_item(config['specs'], item['name']): continue
+        if not check_item(specs, item['name']): continue
         del item['db']
         del item['upd']
         items.append(item)
@@ -249,7 +172,7 @@ def determine_filename(config, item):
         return join(cspdir, *parts, name)
     
     # Non-CSP item (cls, mac, inc, ...)
-    if config['subdirs']:
+    if config.input.Local.subdirs:
         # Non-CSP, make packages directories.
         parts = name.split('.')
         name = '.'.join(parts[-2:])
@@ -258,20 +181,20 @@ def determine_filename(config, item):
         # Non-CSP, packages as part of filename.
         parts = []
     
-    outdir = config['dir']
-    return join(outdir, *parts, name)
+    return join(config.dir, *parts, name)
 
 
 def retrieve_item(config, item):
     """ Retrieves an item from the server """
 
-    svr = config['svr']
+    svr = config.input.Server
 
     # CSP items start with a slash; remove it
     name = item['name']
     if name[0] == '/': name = name[1:]
 
-    url = f"http://{svr['host']}:{svr['port']}/api/atelier/v1/{svr['namespace']}/doc/{name}"
+    scheme = 'https' if svr.https else 'http'
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/doc/{name}"
     
     rsp = urq.urlopen(url)
     with rsp:
@@ -292,16 +215,26 @@ def save_deployable_settings(config):
     
     logging.info(f"Retrieving and saving Ens.Config.DefaultSettings.esd")
     
-    data = data_handler.get_export(config['svr'], 'Ens.Config.DefaultSettings.esd')
+    data = data_handler.get_export(config.input.Server, 'Ens.Config.DefaultSettings.esd')
     if not data:
         return 0
     
     # Make sure the output directory exists
-    if not isdir(config['datadir']):
-        os.makedirs(config['datadir'])
+    if not isdir(config.datadir):
+        os.makedirs(config.datadir)
     
     # Filename for settings
-    fname = join(config['datadir'], config['enssettings'])
+    fname = join(config.datadir, config.input.Project.enssettings.name)
+    
+    # Strip the actual values, if so requested
+    if config.input.Project.enssettings.strip:
+        root = ET.fromstring(data)
+        for item in root.iter('item'):
+            del item.attrib['value']
+        # tostring doesn't return an XML declaration
+        data = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        data += ET.tostring(root, encoding='unicode')
+    
     with open(fname, 'w', encoding='UTF-8') as f:
         f.write(data + '\n')
     
@@ -309,7 +242,8 @@ def save_deployable_settings(config):
 
 
 def save_lookup_tables(config):
-    tables = [ x.strip() for x in config['lookup'].split(',') ]
+    logging.info('Loading list of lookup tables')
+    tables = data_handler.list_lookup_tables(config.input.Server, config.input.Project.lookup)
     count = 0
     for table in tables:
         if not table.lower().endswith('.lut'):
@@ -320,16 +254,16 @@ def save_lookup_tables(config):
 
         logging.info(f"Retrieving and saving {table}")
 
-        data = data_handler.get_export(config['svr'], table)
+        data = data_handler.get_export(config.input.Server, table)
         if not data:
             logging.info(f"  {table} contains no data, skipping.")
             continue
         
         # Make sure the output directory exists
-        if not isdir(config['datadir']):
-            os.makedirs(config['datadir'])
+        if not isdir(config.datadir):
+            os.makedirs(config.datadir)
     
-        fname = join(config['datadir'], table[:-3] + 'lut')
+        fname = join(config.datadir, table[:-3] + 'lut')
         with open(fname, 'w', encoding='UTF-8') as f:
             f.write(data + '\n')
         count += 1
@@ -382,16 +316,17 @@ def set_file_datetime(filename, timestamp):
 def setup_urllib(config):
     """ Setup urllib opener for auth and cookie handling """
 
-    svr = config['svr']
+    svr = config.input.Server
 
     # Setup a (preemptive) basic auth handler
     password_mgr = urq.HTTPPasswordMgrWithPriorAuth()
-    password_mgr.add_password(None, f"http://{svr['host']}:{svr['port']}/",
-        svr['user'], svr['password'], is_authenticated=True)
+    scheme = 'https' if svr.https else 'http'
+    password_mgr.add_password(None, f"{scheme}://{svr.host}:{svr.port}/",
+        svr.user, svr.password, is_authenticated=True)
     auth_handler = urq.HTTPBasicAuthHandler(password_mgr)
 
     # Setup the cookie handler
-    cookiejar = config['cookiejar']
+    cookiejar = config.cookiejar
     cookie_handler = urq.HTTPCookieProcessor(cookiejar)
 
     # Create an opener using these handlers, and make it default
@@ -400,15 +335,15 @@ def setup_urllib(config):
     urq.install_opener(opener)
 
 
-def setup_logging(inifile):
+def setup_logging(cfgfile):
     """ Setup logging to file """
 
     # Determine log file name
-    base, ext = splitext(inifile)
-    if ext.lower() == '.ini':
+    base, ext = splitext(cfgfile)
+    if ext.lower() == '.toml':
         logfile = f'{base}.log'
     else:
-        logfile = f'{inifile}.log'
+        logfile = f'{cfgfile}.log'
     
     # Display what we log as-is, no level strings etc.
     logging.basicConfig(
@@ -444,14 +379,14 @@ def msgbox(msg, is_error=False):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        msgbox(f"Usage: {sys.argv[0]} <inifile>", True)
+        msgbox(f"Usage: {sys.argv[0]} <cfgfile>", True)
         sys.exit(1)
 
-    inifile = sys.argv[1]
-    if not exists(inifile) or not isfile(inifile):
-        msgbox(f"File {inifile} not found.\nUsage: {sys.argv[0]} <inifile>", True)
+    cfgfile = sys.argv[1]
+    if not exists(cfgfile) or not isfile(cfgfile):
+        msgbox(f"File {cfgfile} not found.\nUsage: {sys.argv[0]} <cfgfile>", True)
         sys.exit(1)
     
-    main(inifile)
+    main(cfgfile)
     
 
