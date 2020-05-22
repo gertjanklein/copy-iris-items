@@ -27,7 +27,7 @@ def get_config(cfgfile):
     tpl = { 'cfgname': cfgname }
     for name, default in ("dir", "src"), ("cspdir", "csp"), ("datadir", "data"):
         default = join(cfgname, default)
-        config.__dict__[name] = determine_dir(local[name], default, basedir, tpl)
+        config[name] = determine_dir(local[name], default, basedir, tpl)
     
     # Create cookie jar for session persistence
     svr = config.input.Server
@@ -108,7 +108,20 @@ class Namespace(SimpleNamespace):
     """Namespace that also supports mapping access."""
 
     def __getitem__(self, name):
+        """ Adds support for value = ns['key'] """
         return self.__dict__[name]
+    
+    def __setitem__(self, key, value):
+        """ Adds support for ns['key'] = value """
+        self.__dict__[key] = value
+
+    def __getattribute__(self, name):
+        """ Adds support for local attributes """
+        try:
+            return object.__getattribute__(self, name)
+        except AttributeError:
+            return self.__dict__[name]
+    
 
 def dict2ns(input:dict) -> Namespace:
     """Converts a dict to a namespace for attribute access."""
@@ -116,9 +129,9 @@ def dict2ns(input:dict) -> Namespace:
     ns = Namespace()
     for k, v in input.items():
         if isinstance(v, dict):
-            ns.__dict__[k] = dict2ns(v)
+            ns[k] = dict2ns(v)
         else:
-            ns.__dict__[k] = v
+            ns[k] = v
     return ns
 
 def ns2dict(input:Namespace) -> dict:
