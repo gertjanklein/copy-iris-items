@@ -3,7 +3,7 @@
 
 import sys
 import os
-from os.path import join, isdir, isfile, exists, dirname, abspath, splitext
+from os.path import join, isdir, isfile, exists, dirname, isabs, abspath, splitext, basename
 import logging
 import datetime, time
 import re
@@ -19,14 +19,18 @@ from config import get_config
 def main(cfgfile):
     """ Loads items as specified in the ini file """
 
-    # Set up logging to file next to ini file
-    setup_logging(cfgfile)
+    # Initial logging setup: file next to ini file. Errors parsing the
+    # config file will be logged here.
+    setup_basic_logging(cfgfile)
     
     # Log unhandled exceptions
     sys.excepthook = unhandled_exception
 
     # Get configuration
     config = get_config(cfgfile)
+
+    # Final logging setup: file in directory specified in config file.
+    setup_logging(config)
 
     # Setup authorization and cookie handling
     setup_urllib(config)
@@ -335,8 +339,8 @@ def setup_urllib(config):
     urq.install_opener(opener)
 
 
-def setup_logging(cfgfile):
-    """ Setup logging to file """
+def setup_basic_logging(cfgfile):
+    """ Initial logging setup: log to file next to config file """
 
     # Determine log file name
     base, ext = splitext(cfgfile)
@@ -345,11 +349,43 @@ def setup_logging(cfgfile):
     else:
         logfile = f'{cfgfile}.log'
     
+    # Create handler with delayed creation of log file
+    handlers = [logging.FileHandler(logfile, delay=True)]
+
     # Display what we log as-is, no level strings etc.
-    logging.basicConfig(
-        filename=abspath(logfile),
-        level=logging.INFO,
+    logging.basicConfig(handlers=handlers, level=logging.INFO,
         format='%(message)s')
+
+
+def setup_logging(config):
+    """ Final logging setup: allow log location override in config """
+
+    # If no logdir specified, setup is already complete
+    logdir = config.input.Local.get('logdir')
+    if not logdir: return
+
+    # Determine filename (without path)
+    base, ext = splitext(basename(config.cfgfile))
+    if ext.lower() == '.toml':
+        logfile = f'{base}.log'
+    else:
+        logfile = f'{base}.{ext}.log'
+
+    # Determine filename (with path)
+    name = join(logdir, logfile)
+    if not isabs(logdir):
+        # Logdir not absolute: make it relative to dir config file is in
+        name = join(dirname(config.cfgfile), name)
+
+    # Make sure the log directory exists
+    logdir = dirname(name)
+    os.makedirs(logdir, exist_ok=True)
+
+    # Replace the current logging handler with one using the newly
+    # determined path
+    logger = logging.getLogger()
+    logger.handlers.clear()
+    logger.handlers.append(logging.FileHandler(name, 'a'))
 
 
 def unhandled_exception(exc_type, exc_value, exc_traceback):

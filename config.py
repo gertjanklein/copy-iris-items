@@ -15,6 +15,7 @@ def get_config(cfgfile):
 
     # Get parsed config data
     config.input = dict2ns(toml.load(cfgfile))
+    config.cfgfile = cfgfile
 
     # Create regexes where needed
     config.itemsrx, config.types = get_specs(config.input.Project.items)
@@ -122,6 +123,9 @@ class Namespace(SimpleNamespace):
         except AttributeError:
             return self.__dict__[name]
     
+    def get(self, key, default=None):
+        return self.__dict__.get(key, default)
+
 
 def dict2ns(input:dict) -> Namespace:
     """Converts a dict to a namespace for attribute access."""

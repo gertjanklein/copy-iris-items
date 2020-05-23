@@ -64,6 +64,11 @@ cspdir = "{cfgname}\\csp"
 # name of the configuration file. Default is {cfgname}\data.
 datadir = "{cfgname}\\data"
 
+# Directory for the log file. If empty, the log file is placed adjacent to
+# the configuration file. It will always have the name of the config file,
+# with ".toml" replaced with ".log".
+logdir = ""
+
 # Encoding for (non-binary) files; use valid Python encoding
 # string, e.g. UTF-8 or CP1252. Default is UTF-8.
 encoding = "UTF-8"
