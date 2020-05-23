@@ -35,7 +35,8 @@ When code one person is working on is ready to check in, they can:
 
 (Note that this program does not in any way handle the repository or
 checkin process. This is best left to specialized tools; for git/GitHub,
-e.g. TortoiseGit or GitHub Desktop could be used.)
+e.g. [TortoiseGit](https://tortoisegit.org/) or
+[GitHub Desktop](https://desktop.github.com/) could be used.)
 
 The program is most conveniently used as a drop target for the
 configuration file. See template.toml for the possible configurations.
