@@ -123,7 +123,8 @@ class Namespace(SimpleNamespace):
         except AttributeError:
             return self.__dict__[name]
     
-    def get(self, key, default=None):
+    def _get(self, key, default=None):
+        """ Retrieves a value, or default if not found """
         return self.__dict__.get(key, default)
 
 

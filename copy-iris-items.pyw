@@ -361,7 +361,7 @@ def setup_logging(config):
     """ Final logging setup: allow log location override in config """
 
     # If no logdir specified, setup is already complete
-    logdir = config.input.Local.get('logdir')
+    logdir = config.input.Local._get('logdir')
     if not logdir: return
 
     # Determine filename (without path)
