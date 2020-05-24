@@ -248,6 +248,10 @@ def save_deployable_settings(config):
 def save_lookup_tables(config):
     logging.info('Loading list of lookup tables')
     tables = data_handler.list_lookup_tables(config.Server, config.Project.lookup)
+    if not tables:
+        logging.info('No data lookup tables matching the specifications found.')
+        return 0
+
     count = 0
     for table in tables:
         if not table.lower().endswith('.lut'):
