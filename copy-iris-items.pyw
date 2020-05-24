@@ -36,9 +36,9 @@ def main(cfgfile):
     setup_urllib(config)
 
     # If needed, make sure we have the support code to retrieve data exports
-    project = config.input.Project
+    project = config.Project
     if project.enssettings.name or project.lookup:
-        data_handler.init(config.input.Server)
+        data_handler.init(config.Server)
 
     # Log appends; create visible separation for this run
     now = str(datetime.datetime.now())
@@ -69,11 +69,11 @@ def main(cfgfile):
         count += save_lookup_tables(config)
     
     # Save cookies for reuse if we call the same server quickly again
-    if config.input.Local.cookies:
+    if config.Local.cookies:
         config['cookiejar'].save(ignore_discard=True)
 
     # Cleanup support code
-    data_handler.cleanup(config.input.Server)
+    data_handler.cleanup(config.Server)
 
     msgbox(f"Copied {count} items.")
 
@@ -84,7 +84,7 @@ def get_modified_items(config, itemtype):
     logging.info(f"Retrieving available items of type {itemtype}")
 
     # Assemble URL and create request
-    svr = config.input.Server
+    svr = config.Server
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/modified/{itemtype}?generated=0"
     rq = urq.Request(url, data=b'[]', headers={'Content-Type': 'application/json'}, method='POST')
@@ -102,7 +102,7 @@ def get_items_for_type(config, itemtype):
     logging.info(f"Retrieving available {itemtype} items")
     
     # Assemble URL
-    svr = config.input.Server
+    svr = config.Server
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/docnames/{itemtype}"
     
@@ -176,7 +176,7 @@ def determine_filename(config, item):
         return join(cspdir, *parts, name)
     
     # Non-CSP item (cls, mac, inc, ...)
-    if config.input.Local.subdirs:
+    if config.Local.subdirs:
         # Non-CSP, make packages directories.
         parts = name.split('.')
         name = '.'.join(parts[-2:])
@@ -191,7 +191,7 @@ def determine_filename(config, item):
 def retrieve_item(config, item):
     """ Retrieves an item from the server """
 
-    svr = config.input.Server
+    svr = config.Server
 
     # CSP items start with a slash; remove it
     name = item['name']
@@ -219,7 +219,7 @@ def save_deployable_settings(config):
     
     logging.info(f"Retrieving and saving Ens.Config.DefaultSettings.esd")
     
-    data = data_handler.get_export(config.input.Server, 'Ens.Config.DefaultSettings.esd')
+    data = data_handler.get_export(config.Server, 'Ens.Config.DefaultSettings.esd')
     if not data:
         return 0
     
@@ -228,10 +228,10 @@ def save_deployable_settings(config):
         os.makedirs(config.datadir)
     
     # Filename for settings
-    fname = join(config.datadir, config.input.Project.enssettings.name)
+    fname = join(config.datadir, config.Project.enssettings.name)
     
     # Strip the actual values, if so requested
-    if config.input.Project.enssettings.strip:
+    if config.Project.enssettings.strip:
         root = ET.fromstring(data)
         for item in root.iter('item'):
             del item.attrib['value']
@@ -247,7 +247,7 @@ def save_deployable_settings(config):
 
 def save_lookup_tables(config):
     logging.info('Loading list of lookup tables')
-    tables = data_handler.list_lookup_tables(config.input.Server, config.input.Project.lookup)
+    tables = data_handler.list_lookup_tables(config.Server, config.Project.lookup)
     count = 0
     for table in tables:
         if not table.lower().endswith('.lut'):
@@ -258,7 +258,7 @@ def save_lookup_tables(config):
 
         logging.info(f"Retrieving and saving {table}")
 
-        data = data_handler.get_export(config.input.Server, table)
+        data = data_handler.get_export(config.Server, table)
         if not data:
             logging.info(f"  {table} contains no data, skipping.")
             continue
@@ -320,7 +320,7 @@ def set_file_datetime(filename, timestamp):
 def setup_urllib(config):
     """ Setup urllib opener for auth and cookie handling """
 
-    svr = config.input.Server
+    svr = config.Server
 
     # Setup a (preemptive) basic auth handler
     password_mgr = urq.HTTPPasswordMgrWithPriorAuth()
@@ -361,7 +361,7 @@ def setup_logging(config):
     """ Final logging setup: allow log location override in config """
 
     # If no logdir specified, setup is already complete
-    logdir = config.input.Local._get('logdir')
+    logdir = config.Local._get('logdir')
     if not logdir: return
 
     # Determine filename (without path)

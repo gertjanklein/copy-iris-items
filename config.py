@@ -10,19 +10,16 @@ import toml
 
 
 def get_config(cfgfile):
-    # Create namespace for configuration data
-    config = Namespace()
-
     # Get parsed config data
-    config.input = dict2ns(toml.load(cfgfile))
+    config = dict2ns(toml.load(cfgfile))
     config.cfgfile = cfgfile
 
     # Create regexes where needed
-    config.itemsrx, config.types = get_specs(config.input.Project.items)
-    config.lookuprx = get_lookup_specs(config.input.Project.lookup)
+    config.itemsrx, config.types = get_specs(config.Project.items)
+    config.lookuprx = get_lookup_specs(config.Project.lookup)
 
     # Determine various directories
-    local = config.input.Local
+    local = config.Local
     basedir = abspath(dirname(cfgfile))
     cfgname = splitext(basename(cfgfile))[0]
     tpl = { 'cfgname': cfgname }
@@ -31,7 +28,7 @@ def get_config(cfgfile):
         config[name] = determine_dir(local[name], default, basedir, tpl)
     
     # Create cookie jar for session persistence
-    svr = config.input.Server
+    svr = config.Server
     cookiefile = f"cookies;{svr['host']};{svr['port']}.txt"
     cookiefile = join(dirname(__file__), cookiefile)
     config.cookiejar = http.cookiejar.LWPCookieJar(cookiefile, delayload=False)
