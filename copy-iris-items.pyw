@@ -89,9 +89,13 @@ def get_modified_items(config, itemtype):
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/modified/{itemtype}?generated=0"
     rq = urq.Request(url, data=b'[]', headers={'Content-Type': 'application/json'}, method='POST')
     
-    # Get and convert to JSON
-    with urq.urlopen(rq) as rsp:
-        data = json.load(rsp)
+    try:
+        # Get and convert to JSON
+        with urq.urlopen(rq) as rsp:
+            data = json.load(rsp)
+    except urq.URLError:
+        logging.error(f"Accessing {url}:")
+        raise
     
     return data
 
@@ -107,8 +111,12 @@ def get_items_for_type(config, itemtype):
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/docnames/{itemtype}"
     
     # Get and convert to JSON
-    with urq.urlopen(url) as rsp:
-        data = json.load(rsp)
+    try:
+        with urq.urlopen(url) as rsp:
+            data = json.load(rsp)
+    except urq.URLError:
+        logging.error(f"Accessing {url}:")
+        raise
     
     return data
 
@@ -200,9 +208,12 @@ def retrieve_item(config, item):
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/doc/{name}"
     
-    rsp = urq.urlopen(url)
-    with rsp:
-        data = json.load(rsp)
+    try:
+        with urq.urlopen(url) as rsp:
+            data = json.load(rsp)
+    except urq.URLError:
+        logging.error(f"Accessing {url}:")
+        raise
     
     # Contents may be returned line-by-line
     content = data['result']['content']

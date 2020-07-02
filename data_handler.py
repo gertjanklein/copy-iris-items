@@ -33,8 +33,13 @@ def get_export(svr, name:str):
     query = f"SELECT Tmp_CII.GetExport('{name}') AS result"
     data = json.dumps({ "query": query }).encode()
     rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
-    with urq.urlopen(rq) as rsp:
-        data = json.load(rsp)
+    
+    try:
+        with urq.urlopen(rq) as rsp:
+            data = json.load(rsp)
+    except urq.URLError:
+        logging.error(f"Accessing [POST] {url}:")
+        raise
     
     # Check for errors
     errors = data['status']['errors']
@@ -67,8 +72,12 @@ def list_lookup_tables(svr, specs:list):
 
     # Run query
     rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
-    with urq.urlopen(rq) as rsp:
-        data = json.load(rsp)
+    try:
+        with urq.urlopen(rq) as rsp:
+            data = json.load(rsp)
+    except urq.URLError:
+        logging.error(f"Accessing [POST] {url}:")
+        raise
     
     # Check for errors
     errors = data['status']['errors']
@@ -91,8 +100,13 @@ def init(svr):
     query = "SELECT 1 FROM %Dictionary.ClassDefinition WHERE ID = 'Tmp.CII.Procs'"
     data = json.dumps({ "query": query }).encode()
     rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
-    with urq.urlopen(rq) as rsp:
-        data = json.load(rsp)
+    
+    try:
+        with urq.urlopen(rq) as rsp:
+            data = json.load(rsp)
+    except urq.URLError:
+        logging.error(f"Accessing [POST] {url}:")
+        raise
     
     # If the class still exists, we're done
     if data['result']['content']:
@@ -101,8 +115,13 @@ def init(svr):
     # Get the SQL to create the stored procedure
     data = json.dumps({ "query": CREATE_EXPORT_PROC }).encode()
     rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
-    with urq.urlopen(rq) as rsp:
-        data = json.load(rsp)
+    
+    try:
+        with urq.urlopen(rq) as rsp:
+            data = json.load(rsp)
+    except urq.URLError:
+        logging.error(f"Accessing [POST] {url}:")
+        raise
     
     errors = data['status']['errors']
     if errors:
@@ -126,8 +145,13 @@ def cleanup(svr:dict):
     query = "DROP PROCEDURE Tmp_CII.GetExport"
     data = json.dumps({ "query": query }).encode()
     rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
-    with urq.urlopen(rq) as rsp:
-        data = json.load(rsp)
+    
+    try:
+        with urq.urlopen(rq) as rsp:
+            data = json.load(rsp)
+    except urq.URLError:
+        logging.error(f"Accessing [POST] {url}:")
+        raise
     
     # If that returned errors, don't raise but do add a warning to the log
     errors = data['status']['errors']
