@@ -1,9 +1,0 @@
-__pycache__
-/.vscode
-/cookies*
-/build
-/dist
-/*.spec
-build.cmd
-/venv
-*.ffi
