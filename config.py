@@ -18,6 +18,7 @@ def get_config(cfgfile):
     # Create regexes where needed
     config.itemsrx, config.types = get_specs(config.Project.items)
     config.lookuprx = get_lookup_specs(config.Project.lookup)
+    check_default(config.Project, 'mapped', False)
 
     # Determine various directories
     local = config.Local
@@ -100,6 +101,15 @@ def determine_dir(input, default, basedir, tpl):
         result = join(basedir, result)
     return result
 
+
+def check_default(section:Namespace, name:str, default) -> bool:
+    """ Checks if a value is present, setting default if not """
+
+    value = section._get(name)
+    if value is None or value == '':
+        section[name] = default
+        return True
+    return False
 
 # =====
 

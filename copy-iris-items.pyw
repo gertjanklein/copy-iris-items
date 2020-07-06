@@ -124,11 +124,10 @@ def get_items_for_type(config, itemtype):
 def extract_items(config, result, items):
     """ Extract items from service call result and store in list. """
 
+    mapped = config.Project.mapped
     for db in result:
         # Skip stuff coming from system databases
-        if db.get('dbsys', False): continue
-        # HSCUSTOM is not marked system, but we'll skip it as well
-        if db['dbname'] == 'HSCUSTOM': continue
+        if not mapped and db.get('dbsys', False): continue
         # Check items ('docs') in this DB
         for doc in db['docs']:
             # Skip generated and deployed documents

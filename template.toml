@@ -35,6 +35,11 @@ https = false
 items = [
 ]
 
+# Normally, items marked as mapped from system databases are skipped when
+# looking for items to load. When this flag is true, mapped system items
+# will be included as well, if they match on of the specifications.
+mapped = false
+
 # Ensemble Data Lookup Tables to include. Will be saved as the name of
 # the table with a ".lut" extension. The lookup table name can have,
 # but does not require, a '.lut' extension. Wildcards as with items are
