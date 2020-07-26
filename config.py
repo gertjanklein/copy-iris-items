@@ -7,18 +7,23 @@ import json
 
 import toml
 
-from namespace import Namespace, dict2ns, ns2dict
+import namespace as ns
+from namespace import ConfigurationError
 
 
 def get_config(cfgfile):
     # Get parsed config data
-    config = dict2ns(toml.load(cfgfile))
+    config = ns.dict2ns(toml.load(cfgfile))
     config.cfgfile = cfgfile
+    config.cfgdir = dirname(cfgfile)
+    config.cfgname = splitext(basename(cfgfile))[0]
 
+    # Make sure configuration is complete
+    check(config)
+    
     # Create regexes where needed
     config.itemsrx, config.types = get_specs(config.Project.items)
     config.lookuprx = get_lookup_specs(config.Project.lookup)
-    check_default(config.Project, 'mapped', False)
 
     # Determine various directories
     local = config.Local
@@ -102,21 +107,44 @@ def determine_dir(input, default, basedir, tpl):
     return result
 
 
-def check_default(section:Namespace, name:str, default) -> bool:
-    """ Checks if a value is present, setting default if not """
+# =====
 
-    value = section._get(name)
-    if value is None or value == '':
-        section[name] = default
-        return True
-    return False
+def check(config:ns.Namespace):
+    """Check validity of values in the parsed configuration."""
+
+    svr = ns.check_section(config, "Server")
+    ns.check_notempty(svr, 'host')
+    ns.check_notempty(svr, 'port')
+    ns.check_notempty(svr, 'namespace')
+    ns.check_notempty(svr, 'user')
+    ns.check_notempty(svr, 'password')
+    ns.check_default(svr, 'https', False)
+
+    project = ns.check_section(config, "Project")
+    ns.check_default(project, 'mapped', False)
+    ns.check_default(project, 'items', [])
+    ns.check_default(project, 'lookup', [])
+
+    ens = ns.check_section(project, 'enssettings', False)
+    if ens:
+        ns.check_default(ens, 'name', '')
+        ns.check_default(ens, 'strip', True)
+
+    local = ns.check_section(config, "Local")
+    ns.check_default(local, 'dir', '')
+    ns.check_default(local, 'cspdir', '')
+    ns.check_default(local, 'datadir', '')
+    ns.check_default(local, 'logdir', '')
+    ns.check_default(local, 'subdirs', False)
+    ns.check_default(local, 'cookies', False)
+    ns.check_encoding(local, 'encoding', 'UTF-8')
+
 
 # =====
 
 def main(cfgfile):
     config = get_config(cfgfile)
-    print(json.dumps(ns2dict(config), indent=2, default=str))
-
+    print(json.dumps(ns.ns2dict(config), indent=2, default=str))
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
