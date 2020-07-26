@@ -13,11 +13,11 @@ import json
 import xml.etree.ElementTree as ET
 
 import data_handler
-from config import get_config
+from config import get_config, ConfigurationError
 
 
 def main(cfgfile):
-    """ Loads items as specified in the ini file """
+    """ Loads items as specified in the config file """
 
     # Initial logging setup: file next to ini file. Errors parsing the
     # config file will be logged here.
@@ -405,7 +405,12 @@ def setup_logging(config):
 def unhandled_exception(exc_type, exc_value, exc_traceback):
     """ Handle otherwise unhandled exceptions by logging them """
 
-    logging.exception("\n##### Unhandled exception:", exc_info=(exc_type, exc_value, exc_traceback))
+    if exc_type == ConfigurationError:
+        msg = exc_value.args[0]
+        logging.error("\n%s", msg)
+    else:
+        msg = f"An error occurred; please see the log file for details.\n\n{exc_value}"
+        logging.exception("\n##### Unhandled exception:", exc_info=(exc_type, exc_value, exc_traceback))
     msgbox(f"An error occurred; please see the log file for details.\n\n{exc_value}", True)
     sys.exit(1)
 
