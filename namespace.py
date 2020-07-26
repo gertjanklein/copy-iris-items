@@ -9,7 +9,7 @@ Nested namespaces have their name in a property "_name".
 
 
 from types import SimpleNamespace
-from typing import Optional, Tuple
+from typing import Tuple
 import codecs
 
 
