@@ -40,6 +40,10 @@ items = [
 # will be included as well, if they match on of the specifications.
 mapped = false
 
+# Normally, generated items are skipped, even if they match the
+# specifications. Set this flag to true to change this. 
+generated = false
+
 # Ensemble Data Lookup Tables to include. Will be saved as the name of
 # the table with a ".lut" extension. The lookup table name can have,
 # but does not require, a '.lut' extension. Wildcards as with items are
@@ -49,8 +53,9 @@ lookup = [
 
 [Project.enssettings]
 # Ensemble/interoperability: system default settings. Leave the name empty
-# to prevent retrieving them.
-name = "Ens.Config.DefaultSettings.esd"
+# to prevent retrieving them. The name used in Ensemble deployments is
+# "Ens.Config.DefaultSettings.esd".
+name = ""
 # Whether to strip values from the settings. When the values are stripped,
 # the settings can be used as a list if settings to configure after a
 # production has been deployed.

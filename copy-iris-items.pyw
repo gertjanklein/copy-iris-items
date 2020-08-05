@@ -86,7 +86,8 @@ def get_modified_items(config, itemtype):
     # Assemble URL and create request
     svr = config.Server
     scheme = 'https' if svr.https else 'http'
-    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/modified/{itemtype}?generated=0"
+    generated = '1' if config.Project.generated else '0'
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/modified/{itemtype}?generated={generated}"
     rq = urq.Request(url, data=b'[]', headers={'Content-Type': 'application/json'}, method='POST')
     
     try:
@@ -125,13 +126,14 @@ def extract_items(config, result, items):
     """ Extract items from service call result and store in list. """
 
     mapped = config.Project.mapped
+    generated = config.Project.generated
     for db in result:
         # Skip stuff coming from system databases
         if not mapped and db.get('dbsys', False): continue
         # Check items ('docs') in this DB
         for doc in db['docs']:
-            # Skip generated and deployed documents
-            if doc.get('gen', False): continue
+            # Skip generated (if so configured) and deployed documents
+            if not generated and doc.get('gen', False): continue
             if doc.get('depl', False): continue
             # Skip item if it doesn't match the project spec
             if not check_item(config.itemsrx, doc['name']): continue

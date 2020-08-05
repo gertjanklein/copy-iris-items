@@ -122,6 +122,7 @@ def check(config:ns.Namespace):
 
     project = ns.check_section(config, "Project")
     ns.check_default(project, 'mapped', False)
+    ns.check_default(project, 'generated', False)
     ns.check_default(project, 'items', [])
     ns.check_default(project, 'lookup', [])
 
