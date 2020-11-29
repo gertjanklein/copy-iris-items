@@ -119,6 +119,11 @@ def check(config:ns.Namespace):
     ns.check_notempty(svr, 'user')
     ns.check_notempty(svr, 'password')
     ns.check_default(svr, 'https', False)
+    ns.check_default(svr, 'threads', 1)
+    if not isinstance(svr.threads, int):
+        raise ConfigurationError("Setting 'threads' must be an integral number")
+    if not 1 <= svr.threads <= 20:
+        raise ConfigurationError("Setting 'threads' must be between 1 and 20")
 
     project = ns.check_section(config, "Project")
     ns.check_default(project, 'mapped', False)

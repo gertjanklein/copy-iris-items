@@ -3,6 +3,8 @@
 
 import sys
 import os
+import asyncio
+import concurrent.futures
 from os.path import join, isdir, isfile, exists, dirname, isabs, abspath, splitext, basename
 import logging
 import datetime, time
@@ -58,8 +60,7 @@ def main(cfgfile):
             extract_csp_items(config, data['result']['content'], items)
 
     # Save each one to disk
-    for item in items:
-        save_item(config, item)
+    save_items(config, items)
     count = len(items)
 
     # Save Ensemble deployable settings and lookup tables, if asked
@@ -289,6 +290,33 @@ def save_lookup_tables(config):
         count += 1
     
     return count
+
+
+def save_items(config, items):
+    """ Saves items either in serial or in parallel """
+
+    # Check if/how many threads we should use:
+    threads = config.Server.threads
+    if threads > 1:
+        # Use coroutine and ThreadPoolExecutor
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(save_items_parallel(config, items, threads))
+    else:
+        # Just save the items one by one
+        for item in items:
+            save_item(config, item)
+
+
+async def save_items_parallel(config, items, max_workers):
+    """ Retrieves and saves items in parallel """
+    
+    futures = []
+    loop = asyncio.get_event_loop()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for item in items:
+            future = loop.run_in_executor(executor, save_item, config, item)
+            futures.append(future)
+    await asyncio.gather(*futures)
 
 
 def save_item(config, item):

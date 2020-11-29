@@ -9,7 +9,13 @@ port = ""
 namespace = ""
 user = ""
 password = ""
+# Whether HTTPS is needed to connect to IRIS.
 https = false
+# The number of threads (paralell fetches) to use. Fetching in
+# parallel can increase performance significantly, especially
+# with remote servers. Must be a number between 1 (not parallel)
+# and 20 (the maximum number of concurrent fetches).
+threads = 1
 
 
 ##### What belongs to this project
