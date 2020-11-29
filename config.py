@@ -126,7 +126,7 @@ def check(config:ns.Namespace):
     ns.check_default(project, 'items', [])
     ns.check_default(project, 'lookup', [])
 
-    ens = ns.check_section(project, 'enssettings', False)
+    ens = ns.get_section(project, 'enssettings')
     if ens:
         ns.check_default(ens, 'name', '')
         ns.check_default(ens, 'strip', True)
