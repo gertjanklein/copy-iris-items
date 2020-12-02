@@ -247,7 +247,8 @@ def save_deployable_settings(config):
     if config.Project.enssettings.strip:
         root = ET.fromstring(data)
         for item in root.iter('item'):
-            del item.attrib['value']
+            if 'value' in item.attrib:
+                del item.attrib['value']
         # tostring doesn't return an XML declaration
         data = '<?xml version="1.0" encoding="UTF-8"?>\n'
         data += ET.tostring(root, encoding='unicode')
