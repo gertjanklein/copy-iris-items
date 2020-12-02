@@ -99,6 +99,12 @@ def get_modified_items(config, itemtype):
         logging.error(f"Accessing {url}:")
         raise
     
+    # Check for configuration issue:
+    if len(data['status']['errors']):
+        e = data['status']['errors'][0]
+        if e['code'] == 16004:
+            raise ConfigurationError(f"Fout van server: onbekend type item '{itemtype}'.")
+
     return data
 
 
