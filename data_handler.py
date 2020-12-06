@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
-# encoding: CP1252
-
 import urllib.request as urq
+from urllib.error import URLError
 import json
 import logging
+
+import namespace as ns
 
 
 # SQL to create a stored procedure that can export things by calling
@@ -24,20 +24,20 @@ CREATE PROCEDURE GetExport(name SYSNAME) FOR Tmp.CII.Procs RETURNS CHAR LANGUAGE
 created = False
 
 
-def get_export(svr, name:str):
+def get_export(svr:ns.Namespace, name:str):
     # URL for query actions
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
     
     # Get export for the requested name
     query = f"SELECT Tmp_CII.GetExport('{name}') AS result"
-    data = json.dumps({ "query": query }).encode()
-    rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
+    dataout = json.dumps({ "query": query }).encode()
+    rq = urq.Request(url, data=dataout, headers={'Content-Type': 'application/json'}, method='POST')
     
     try:
         with urq.urlopen(rq) as rsp:
             data = json.load(rsp)
-    except urq.URLError:
+    except URLError:
         logging.error(f"Accessing [POST] {url}:")
         raise
     
@@ -50,32 +50,32 @@ def get_export(svr, name:str):
     return result
 
 
-def list_lookup_tables(svr, specs:list):
+def list_lookup_tables(svr:ns.Namespace, specs:list):
     # URL for query actions
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
 
     # Build query for tables matching spec(s)
-    conds = []
-    parms = []
+    condlst = []
+    parmlst = []
     for spec in specs:
-        conds.append("TableName LIKE ?")
-        parms.append(spec.replace('*', '%'))
-    conds = ' OR '.join(conds)
+        condlst.append("TableName LIKE ?")
+        parmlst.append(spec.replace('*', '%'))
+    conds = ' OR '.join(condlst)
     query = "SELECT DISTINCT TableName FROM Ens_Util.LookupTable WHERE " + conds
     
     # Convert to JSON and UTF8-encode
-    data = json.dumps({
+    dataout = json.dumps({
             "query": query,
-            "parameters": parms
+            "parameters": parmlst
         }).encode()
 
     # Run query
-    rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
+    rq = urq.Request(url, data=dataout, headers={'Content-Type': 'application/json'}, method='POST')
     try:
         with urq.urlopen(rq) as rsp:
             data = json.load(rsp)
-    except urq.URLError:
+    except URLError:
         logging.error(f"Accessing [POST] {url}:")
         raise
     
@@ -89,7 +89,7 @@ def list_lookup_tables(svr, specs:list):
     return tables
 
 
-def init(svr):
+def init(svr:ns.Namespace):
     global created
 
     # URL for query actions
@@ -98,13 +98,13 @@ def init(svr):
     
     # Check whether the class containing the stored procedure exists
     query = "SELECT 1 FROM %Dictionary.ClassDefinition WHERE ID = 'Tmp.CII.Procs'"
-    data = json.dumps({ "query": query }).encode()
-    rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
+    dataout = json.dumps({ "query": query }).encode()
+    rq = urq.Request(url, data=dataout, headers={'Content-Type': 'application/json'}, method='POST')
     
     try:
         with urq.urlopen(rq) as rsp:
             data = json.load(rsp)
-    except urq.URLError:
+    except URLError:
         logging.error(f"Accessing [POST] {url}:")
         raise
     
@@ -113,13 +113,13 @@ def init(svr):
         return
 
     # Get the SQL to create the stored procedure
-    data = json.dumps({ "query": CREATE_EXPORT_PROC }).encode()
-    rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
+    dataout = json.dumps({ "query": CREATE_EXPORT_PROC }).encode()
+    rq = urq.Request(url, data=dataout, headers={'Content-Type': 'application/json'}, method='POST')
     
     try:
         with urq.urlopen(rq) as rsp:
             data = json.load(rsp)
-    except urq.URLError:
+    except URLError:
         logging.error(f"Accessing [POST] {url}:")
         raise
     
@@ -130,7 +130,7 @@ def init(svr):
     created = True
 
 
-def cleanup(svr:dict):
+def cleanup(svr:ns.Namespace):
     global created
 
     # If we did not create the stored procedure, there's nothing to do here
@@ -143,13 +143,13 @@ def cleanup(svr:dict):
     
     # Drop the stored procedure we created
     query = "DROP PROCEDURE Tmp_CII.GetExport"
-    data = json.dumps({ "query": query }).encode()
-    rq = urq.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
+    dataout = json.dumps({ "query": query }).encode()
+    rq = urq.Request(url, data=dataout, headers={'Content-Type': 'application/json'}, method='POST')
     
     try:
         with urq.urlopen(rq) as rsp:
             data = json.load(rsp)
-    except urq.URLError:
+    except URLError:
         logging.error(f"Accessing [POST] {url}:")
         raise
     
