@@ -61,55 +61,17 @@ is used for the same purpose by InterSystems Atelier. As a result, it
 can only be used on servers that support that API, i.e. Caché 2016.2 or
 later.
 
-## Basic configuration
-
-The program requires a configuration file to be specified on its command
-line. It takes no other commandline arguments. For details of what can
-be specified in the  configuration file, see file template.toml. The
-syntax is [toml](https://github.com/toml-lang/toml), an ini-like
-language for use in configuration files.
-
-The configuration file has three main sections: Server, Project, and Local.
-
-### Server
-
-This section specifies details of the server to connect to (hostname or
-IP address, port, credentials, namespace). The port to specify is the
-web server port (the same one the management portal uses), not the
-superserver port.
-
-### Project
-
-The program is based on the concept of a project, specifying which items
-belong together and should be checked in in the same repository. This
-allows having multiple projects (e.g., component libraries) in a single
-namespace, handling them separately. This section specifies the items
-that belong to the project. These may include classes, mac-files,
-include files, CSP files. Ensemble data lookup tables are also
-supported, and preliminary support for Ensemble default configuration
-settings is present.
-
-### Local
-
-This section specifies what should be done with the downloaded files. It
-specifies where to save source, CSP, and data files, and what encoding
-to use (where appropriate).
-
 ## Usage
 
-The program is a (non-console) python script. If you already have an
-appropriate version of Python installed, you can just
-[download it](https://github.com/gertjanklein/copy-iris-items/archive/master.zip),
-`pip install toml`, and use the script directly:
+You can download a binary release for Windows
+[here](https://github.com/gertjanklein/copy-iris-items/releases). The
+program has no installer; just unzip it somewhere appropriate. The
+Python script can also be used directly; make sure the toml library is
+avaiable (`pip install toml`).
 
-```txt
-copy-iris-items.pyw <project.toml>
-```
-
-If you don't have Python installed, or prefer an executable, you can
-download a binary release for Windows
-[here](https://github.com/gertjanklein/copy-iris-items/releases).
-The program has no installer; just unzip it somewhere appropriate.
+Configuration is described in more detail [here](doc/configuration.md).
+The [template configuration file](template.toml) also contains
+descriptions of the various options.
 
 It is easiest to create a shortcut to the program (either script or
 binary) next to the configuration file, and drag and drop it on the

@@ -11,49 +11,28 @@ user = ""
 password = ""
 # Whether HTTPS is needed to connect to IRIS.
 https = false
-# The number of threads (paralell fetches) to use. Fetching in
-# parallel can increase performance significantly, especially
-# with remote servers. Must be a number between 1 (not parallel)
-# and 20 (the maximum number of concurrent fetches).
+# The number of threads (paralell fetches) to use. Must be a number
+# between 1 (not parallel) and 20 (the maximum number of concurrent
+# fetches).
 threads = 1
 
 
 ##### What belongs to this project
 [Project]
-# Specify items belonging to the project here. Asterisks are
-# supported. Examples:
-# - All classes in package Strix:
-#   [ "Strix.*.cls" ]
-# - All include files:
-#   [ "*.inc" ]
-# CSP files are supported as well, and will be placed in the csp
-# directory specified below.
-# - All files in CSP application /csp/dev:
-#   [ "/csp/dev/*" ]
-# - Only CSP files, images, and css, nothing else:
-#   [ "/app/*.csp",
-#     "/app/*.css",
-#     "/app/*.js" ]
-# Exclude rules are prefixed with a minus; assuming the above
-# rules, the following then excludes all classes in package Strix.Work,
-# and temporary images:
-#   [ "-Strix.Work.*.cls", "-/csp/dev/tmp*.jpg" ]
+# Specify items belonging to the project here. Wildcards using asterisks
+# are supported. Exclude rules are prefixed with a minus. CSP files are
+# supported; specify them starting with their URL path (e.g.
+# '/csp/dev/*').
 items = [
 ]
 
-# Normally, items marked as mapped from system databases are skipped when
-# looking for items to load. When this flag is true, mapped system items
-# will be included as well, if they match on of the specifications.
+# Whether to include items mapped from another database.
 mapped = false
 
-# Normally, generated items are skipped, even if they match the
-# specifications. Set this flag to true to change this. 
+# Whether to include generated items.
 generated = false
 
-# Ensemble Data Lookup Tables to include. Will be saved as the name of
-# the table with a ".lut" extension. The lookup table name can have,
-# but does not require, a '.lut' extension. Wildcards as with items are
-# supported.
+# Ensemble Data Lookup Tables to include.
 lookup = [
 ]
 
@@ -62,48 +41,36 @@ lookup = [
 # to prevent retrieving them. The name used in Ensemble deployments is
 # "Ens.Config.DefaultSettings.esd".
 name = ""
-# Whether to strip values from the settings. When the values are stripped,
-# the settings can be used as a list if settings to configure after a
-# production has been deployed.
+# Whether to strip values from the settings.
 strip = true
 
 
 ##### Where and how to save things.
 [Local]
 # Directories which are not an absolut path, will be taken relative to
-# the location of the configuration file.
+# the location of the configuration file. The string {cfgname} will be
+# replaced by the name of the configuration file
 
-# Directory to place files in. Occurances of the string {cfgname} will
-# be replaced by the name of the configuration file. Default is {cfgname}\src.
+# Directory to place source files (class, mac, inc, etc.) in.
 dir = '{cfgname}\src'
 
-# Directory for CSP files, if any. This should normally be kept outside
-# the non-CSP items directory, so that one can be used with
-# $System.OBJ.ImportDir(). Occurances of the string {cfgname} will
-# be replaced by the name of the configuration file. Default is {cfgname}\csp.
+# Directory for CSP files.
 cspdir = '{cfgname}\csp'
 
-# Directory for data files, if any. Datafiles are e.g. data lookup table
-# exports. Occurances of the string {cfgname} will be replaced by the
-# name of the configuration file. Default is {cfgname}\data.
+# Directory for data files.
 datadir = '{cfgname}\data'
 
-# Directory for the log file. If empty, the log file is placed adjacent to
-# the configuration file. It will always have the name of the config file,
-# with ".toml" replaced with ".log".
+# Directory for the log file. If empty, the log file is placed adjacent
+# to the configuration file.
 logdir = ""
 
-# Encoding for (non-binary) files; use valid Python encoding
-# string, e.g. UTF-8 or CP1252. Default is UTF-8.
+# Encoding for (non-binary) files; default is UTF-8.
 encoding = "UTF-8"
 
 # Whether to make directories for packages (true) or not (false)
-# If true a.b.c.cls will become a\b\c.cls.
 subdirs = true
 
-# Whether to save a file (per connection) with cookies, so that the
-# CSP licence can be retained between runs. This is only needed if
-# many successive runs are expected, and/or the CSP license allocation
-# time is large.
+# Whether to save a file (per connection) with cookies, so that the CSP
+# licence can be retained between runs.
 cookies = false
 
