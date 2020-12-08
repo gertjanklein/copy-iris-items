@@ -355,6 +355,13 @@ def save_item(config, item):
             # Binary document (e.g. image from CSP application)
             with open(fname, 'wb') as f:
                 f.write(data)
+    except UnicodeEncodeError as e:
+        faulty = data[e.start-1:e.end]
+        msg = f"Error saving {item['name']}: some characters can't be saved" \
+            f" in the configured encoding ({config['encoding']}). Problem" \
+            f" starts around character {e.start}; data: {faulty}."
+        raise ConfigurationError(msg) from None
+    
     except Exception:
         logging.error(f"\nException detected writing to file {fname}")
         raise
