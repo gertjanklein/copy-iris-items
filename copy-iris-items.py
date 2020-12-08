@@ -249,15 +249,21 @@ def save_deployable_settings(config):
     # Filename for settings
     fname = join(config.datadir, config.Project.enssettings.name)
     
+    # Remove timestamp and version from export
+    root = ET.fromstring(data)
+    for name in 'ts', 'zv':
+        if name in root.attrib:
+            del root.attrib[name]
+
     # Strip the actual values, if so requested
     if config.Project.enssettings.strip:
-        root = ET.fromstring(data)
         for item in root.iter('item'):
             if 'value' in item.attrib:
                 del item.attrib['value']
-        # tostring doesn't return an XML declaration
-        data = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        data += ET.tostring(root, encoding='unicode')
+    
+    # tostring doesn't return an XML declaration
+    data = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    data += ET.tostring(root, encoding='unicode')
     
     with open(fname, 'w', encoding='UTF-8') as f:
         f.write(data + '\n')
@@ -436,7 +442,7 @@ def setup_logging(config):
     # determined path
     logger = logging.getLogger()
     logger.handlers.clear()
-    logger.handlers.append(logging.FileHandler(name, 'a'))
+    logger.handlers.append(logging.FileHandler(name, 'a', 'UTF-8'))
 
 
 def unhandled_exception(exc_type, exc_value, exc_traceback):
