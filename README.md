@@ -66,8 +66,8 @@ later.
 You can download a binary release for Windows
 [here](https://github.com/gertjanklein/copy-iris-items/releases). The
 program has no installer; just unzip it somewhere appropriate. The
-Python script can also be used directly; make sure the toml library is
-avaiable (`pip install toml`).
+Python script can also be used directly; make sure the toml and lxml
+libraries are avaiable (`pip install toml lxml`).
 
 Configuration is described in more detail [here](doc/configuration.md).
 The [template configuration file](template.toml) also contains
