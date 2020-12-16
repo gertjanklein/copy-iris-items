@@ -12,7 +12,7 @@ import re
 import base64
 import urllib.request as urq
 import json
-import xml.etree.ElementTree as ET
+import lxml.etree as ET
 
 import data_handler
 from config import get_config, ConfigurationError
@@ -250,7 +250,7 @@ def save_deployable_settings(config):
     fname = join(config.datadir, config.Project.enssettings.name)
     
     # Remove timestamp and version from export
-    root = ET.fromstring(data)
+    root = ET.fromstring(data.encode('UTF-8'))
     for name in 'ts', 'zv':
         if name in root.attrib:
             del root.attrib[name]
@@ -293,6 +293,15 @@ def save_lookup_tables(config):
             logging.info(f"  {table} contains no data, skipping.")
             continue
         
+        # Remove timestamp and version from export
+        root = ET.fromstring(data.encode('UTF-8'))
+        for name in 'ts', 'zv':
+            if name in root.attrib:
+                del root.attrib[name]
+        # tostring doesn't return an XML declaration
+        data = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        data += ET.tostring(root, encoding='unicode')
+
         # Make sure the output directory exists
         if not isdir(config.datadir):
             os.makedirs(config.datadir)
