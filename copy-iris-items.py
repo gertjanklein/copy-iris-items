@@ -223,8 +223,9 @@ def retrieve_item(config, item):
         logging.error(f"Accessing {url}:")
         raise
     
-    # Contents may be returned line-by-line
-    content = data['result']['content']
+    # Contents returned line-by-line. Make sure a terminating
+    # newline is present.
+    content = data['result']['content'] + ['']
     content = '\n'.join(content)
     if data['result']['enc'] and content:
         # Base-64 encoded data, to decode convert to bytes first
