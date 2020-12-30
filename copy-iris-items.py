@@ -223,11 +223,20 @@ def retrieve_item(config, item):
         logging.error(f"Accessing {url}:")
         raise
     
-    # Contents returned line-by-line. Make sure a terminating
-    # newline is present.
-    content = data['result']['content'] + ['']
+    result = data['result']
+    content = result['content']
+
+    # CSP/RTN text contents is missing a trailing newline; fix this unless
+    # the configuration says no.
+    nofix = config.Local.disable_eol_fix
+    if not nofix and result['cat'] in ('CSP', 'RTN') and not result['enc']:
+        content.append('')
+    
+    # Contents may be returned line-by-line: always for text, and for
+    # base-64 if too big.
     content = '\n'.join(content)
-    if data['result']['enc'] and content:
+
+    if result['enc'] and content:
         # Base-64 encoded data, to decode convert to bytes first
         content = base64.decodebytes(content.encode())
     

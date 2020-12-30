@@ -143,6 +143,7 @@ def check(config:ns.Namespace):
     ns.check_default(local, 'logdir', '')
     ns.check_default(local, 'subdirs', False)
     ns.check_default(local, 'cookies', False)
+    ns.check_default(local, 'disable_eol_fix', False)
     ns.check_encoding(local, 'encoding', 'UTF-8')
 
 

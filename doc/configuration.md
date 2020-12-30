@@ -139,5 +139,12 @@ Configuration options are:
   `{cfgname}\src\Strix.XML.Util.cls`.
 * **cookies** (true|false, default false) specifies whether server
   cookies should be saved to file, so they can be reused between runs.
-  This is mostly useful to reduce CSP license count usage on older systems. (CSP licenses are used as items are retrieved using a
-  CSP API.)
+  This is mostly useful to reduce CSP license count usage on older
+  systems. (CSP licenses are used as items are retrieved using a CSP
+  API.)
+* **disable_eol_fix** (true|false, default false) allows disabling a fix
+  that saves the proper number of newlines when exporting CSP and
+  routine items. Before version 0.4.7, one final newline was stripped.
+  With this fix, exporting and re-importing does not change the file.
+  Disabling this fix could be useful to prevent many whitespace-only
+  changes in an existing repository.
