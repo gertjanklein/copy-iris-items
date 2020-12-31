@@ -11,6 +11,7 @@ import datetime, time
 import re
 import base64
 import urllib.request as urq
+from urllib.error import URLError
 import json
 import lxml.etree as ET
 
@@ -95,7 +96,7 @@ def get_modified_items(config, itemtype):
         # Get and convert to JSON
         with urq.urlopen(rq) as rsp:
             data = json.load(rsp)
-    except urq.URLError:
+    except URLError:
         logging.error(f"Accessing {url}:")
         raise
     
@@ -122,7 +123,7 @@ def get_items_for_type(config, itemtype):
     try:
         with urq.urlopen(url) as rsp:
             data = json.load(rsp)
-    except urq.URLError:
+    except URLError:
         logging.error(f"Accessing {url}:")
         raise
     
@@ -219,7 +220,7 @@ def retrieve_item(config, item):
     try:
         with urq.urlopen(url) as rsp:
             data = json.load(rsp)
-    except urq.URLError:
+    except URLError:
         logging.error(f"Accessing {url}:")
         raise
     
@@ -366,7 +367,7 @@ def save_item(config, item):
     # to log the name of the file we tried to write to, and reraise; function
     # unhandled_exception will log the stack trace.
     try:
-        if type(data) != bytes:
+        if not isinstance(data, bytes):
             # Text document; store in specified encoding (default UTF-8)
             with open(fname, 'wt', encoding=config['encoding']) as f:
                 f.write(data)
