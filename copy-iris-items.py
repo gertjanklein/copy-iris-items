@@ -3,6 +3,7 @@
 
 import sys
 import os
+from typing import Any, List, Dict
 import asyncio
 import concurrent.futures
 from os.path import join, isdir, isfile, exists, dirname, isabs, abspath, splitext, basename
@@ -17,9 +18,10 @@ import lxml.etree as ET
 
 import data_handler
 from config import get_config, ConfigurationError
+import namespace as ns
 
 
-def main(cfgfile):
+def main(cfgfile:str):
     """ Loads items as specified in the config file """
 
     # Initial logging setup: file next to ini file. Errors parsing the
@@ -48,7 +50,7 @@ def main(cfgfile):
     logging.info(f"\n\n===== Starting sync at {now.split('.')[0]}")
 
     # Get list of all items we're interested in
-    items = []
+    items: List[dict] = []
     for tp in config.types:
         # Get server items for this type
         if tp != 'csp':
@@ -80,7 +82,7 @@ def main(cfgfile):
     msgbox(f"Copied {count} items.")
 
 
-def get_modified_items(config, itemtype):
+def get_modified_items(config:ns.Namespace, itemtype:str):
     """ Retrieves all items of specified type from the server """
 
     logging.info(f"Retrieving available items of type {itemtype}")
@@ -109,7 +111,7 @@ def get_modified_items(config, itemtype):
     return data
 
 
-def get_items_for_type(config, itemtype):
+def get_items_for_type(config:ns.Namespace, itemtype:str):
     """ Retrieves all items of a given type from the server """
 
     logging.info(f"Retrieving available {itemtype} items")
@@ -130,7 +132,7 @@ def get_items_for_type(config, itemtype):
     return data
 
 
-def extract_items(config, result, items):
+def extract_items(config:ns.Namespace, result:List, items:List):
     """ Extract items from service call result and store in list. """
 
     mapped = config.Project.mapped
@@ -152,7 +154,7 @@ def extract_items(config, result, items):
             items.append(doc)
 
 
-def extract_csp_items(config, result, items):
+def extract_csp_items(config:ns.Namespace, result:List, items:List):
     """ Extract items from service call result and store in list. """
     
     specs = config.itemsrx
@@ -163,7 +165,7 @@ def extract_csp_items(config, result, items):
         items.append(item)
 
 
-def check_item(specs, item):
+def check_item(specs:Dict[str,List], item:str):
     """ Checks if a name matches the project specifications """
 
     # First check exclusion specs
@@ -180,7 +182,7 @@ def check_item(specs, item):
     return False
 
 
-def determine_filename(config, item):
+def determine_filename(config:ns.Namespace, item:dict):
     """ Determine output filename for an item """
 
     name = item['name']
@@ -205,7 +207,7 @@ def determine_filename(config, item):
     return join(config.dir, *parts, name)
 
 
-def retrieve_item(config, item):
+def retrieve_item(config:ns.Namespace, item:dict):
     """ Retrieves an item from the server """
 
     svr = config.Server
@@ -244,7 +246,7 @@ def retrieve_item(config, item):
     return content
 
 
-def save_deployable_settings(config):
+def save_deployable_settings(config:ns.Namespace):
     """ Retrieves and saves Ensemble deployable config settings. """
     
     logging.info(f"Retrieving and saving Ens.Config.DefaultSettings.esd")
@@ -282,7 +284,7 @@ def save_deployable_settings(config):
     return 1
 
 
-def save_lookup_tables(config):
+def save_lookup_tables(config:ns.Namespace):
     logging.info('Loading list of lookup tables')
     tables = data_handler.list_lookup_tables(config.Server, config.Project.lookup)
     if not tables:
@@ -325,7 +327,7 @@ def save_lookup_tables(config):
     return count
 
 
-def save_items(config, items):
+def save_items(config:ns.Namespace, items:List):
     """ Saves items either in serial or in parallel """
 
     # Check if/how many threads we should use:
@@ -340,7 +342,7 @@ def save_items(config, items):
             save_item(config, item)
 
 
-async def save_items_parallel(config, items, max_workers):
+async def save_items_parallel(config:ns.Namespace, items:List, max_workers:int):
     """ Retrieves and saves items in parallel """
     
     futures = []
@@ -352,7 +354,7 @@ async def save_items_parallel(config, items, max_workers):
     await asyncio.gather(*futures)
 
 
-def save_item(config, item):
+def save_item(config:ns.Namespace, item:Dict[str,Any]):
     """ Retrieves an item and saves it to disk """
 
     logging.info(f"Retrieving and saving {item['name']}")
@@ -369,12 +371,12 @@ def save_item(config, item):
     try:
         if not isinstance(data, bytes):
             # Text document; store in specified encoding (default UTF-8)
-            with open(fname, 'wt', encoding=config['encoding']) as f:
-                f.write(data)
+            with open(fname, 'wt', encoding=config['encoding']) as ft:
+                ft.write(data)
         else:
             # Binary document (e.g. image from CSP application)
-            with open(fname, 'wb') as f:
-                f.write(data)
+            with open(fname, 'wb') as fb:
+                fb.write(data)
     except UnicodeEncodeError as e:
         faulty = data[e.start-1:e.end]
         msg = f"Error saving {item['name']}: some characters can't be saved" \
@@ -390,7 +392,7 @@ def save_item(config, item):
     set_file_datetime(fname, item['ts'])
 
 
-def set_file_datetime(filename, timestamp):
+def set_file_datetime(filename:str, timestamp:str):
     """ Sets a file's modified date/time """
 
     # Convert timestamp string to datetime object
@@ -401,7 +403,7 @@ def set_file_datetime(filename, timestamp):
     os.utime(filename, (tm, tm))
 
 
-def setup_urllib(config):
+def setup_urllib(config:ns.Namespace):
     """ Setup urllib opener for auth and cookie handling """
 
     svr = config.Server
@@ -423,7 +425,7 @@ def setup_urllib(config):
     urq.install_opener(opener)
 
 
-def setup_basic_logging(cfgfile):
+def setup_basic_logging(cfgfile:str):
     """ Initial logging setup: log to file next to config file """
 
     # Determine log file name
@@ -441,7 +443,7 @@ def setup_basic_logging(cfgfile):
         format='%(message)s')
 
 
-def setup_logging(config):
+def setup_logging(config:ns.Namespace):
     """ Final logging setup: allow log location override in config """
 
     # If no logdir specified, setup is already complete
@@ -485,7 +487,7 @@ def unhandled_exception(exc_type, exc_value, exc_traceback):
     sys.exit(1)
 
 
-def msgbox(msg, is_error=False):
+def msgbox(msg:str, is_error=False):
     """ Display, if on Windows, a message box """
 
     if os.name == 'nt':
