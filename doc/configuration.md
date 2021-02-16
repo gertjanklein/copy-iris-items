@@ -1,8 +1,11 @@
 # Configuration
 
 Program configuration is done with a configuration file. The file
-location must be specified on the command line. The program takes no
-other commandline arguments. To ease specifying new configurations, a
+location must be specified on the command line. Apart from the name of
+the configuration file, an option **--no-gui** may be specified, to
+prevent the popup of a summary message box when processing is complete.
+Running the program without any arguments shows a quick usage popup
+message. To ease specifying new configurations, a
 [template file](../template.toml) is provided. The syntax is
 [toml](https://github.com/toml-lang/toml), an ini-like language for use
 in configuration files.
@@ -42,7 +45,7 @@ if speed is important, some experimentation may be required.
 The program is based on the concept of a project, specifying which items
 belong together and should be checked in in the same repository. This
 allows having multiple projects (e.g., component libraries) in a single
-namespace, handling them separately. Each project then has a separare
+namespace, handling them separately. Each project then has a separate
 configuration file.
 
 This section specifies the items that belong to the project. These may
@@ -92,7 +95,7 @@ Additional configuration options in this section are:
 ## Project.enssettings
 
 This subsection of [Project](#project) specifies if and how to retrieve the
-Ensmble _system default settings_. The configuration options are:
+Ensemble _system default settings_. The configuration options are:
 
 * **name** should be either `Ens.Config.DefaultSettings.esd` (to retrieve
   them) or empty.
@@ -104,7 +107,7 @@ Ensmble _system default settings_. The configuration options are:
 
 This section specifies what should be done with the downloaded items.
 
-Directories specified here, which are not an absolut path, will be taken
+Directories specified here, which are not an absolute path, will be taken
 relative to the location of the configuration file. In addition, the
 literal string `{cfgname}` in a directory name will be replaced with the
 name of the configuration file (without `.toml` extension). It is
