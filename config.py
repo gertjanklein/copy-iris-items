@@ -3,7 +3,11 @@ import sys, os
 from os.path import exists, isfile, abspath, isabs, dirname, basename, splitext, join
 import re
 import http.cookiejar
-import json
+import argparse
+from io import StringIO
+import logging
+
+from typing import List, cast
 
 import toml
 
@@ -11,12 +15,36 @@ import namespace as ns
 from namespace import ConfigurationError
 
 
-def get_config(cfgfile):
+def get_config() -> ns.Namespace:
+
+    # Get configuration filename from commandline
+    args = parse_args()
+    cfgfile = args.config
+
+    # Initial logging setup: file next to config file. Errors parsing the
+    # config file will be logged here.
+    setup_basic_logging(cfgfile)
+    
+    # Log unhandled exceptions
+    sys.excepthook = unhandled_exception
+
     # Get parsed config data
     config = ns.dict2ns(toml.load(cfgfile))
     config.cfgfile = cfgfile
     config.cfgdir = dirname(cfgfile)
     config.cfgname = splitext(basename(cfgfile))[0]
+
+    # Minimal check for logging configuration
+    local = ns.check_section(config, 'Local')
+    ns.check_default(local, 'logdir', '')
+    levels = 'debug,info,warning,error,critical'.split(',')
+    ns.check_oneof(local, 'loglevel', levels, 'info')
+
+    # Do final setup of logging
+    setup_logging(config)
+
+    # Merge command line overrides into configuration
+    merge_overrides(args, config)
 
     # Make sure configuration is complete
     check(config)
@@ -149,18 +177,156 @@ def check(config:ns.Namespace):
 
 # =====
 
-def main(cfgfile):
-    config = get_config(cfgfile)
-    print(json.dumps(ns.ns2dict(config), indent=2, default=str))
+def setup_basic_logging(cfgfile:str):
+    """ Initial logging setup: log to file next to config file """
 
-if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <configfile>")
-        sys.exit(1)
+    # Determine log file name
+    base, ext = splitext(cfgfile)
+    if ext.lower() == '.toml':
+        logfile = f'{base}.log'
+    else:
+        logfile = f'{cfgfile}.log'
+    
+    # Create handler with delayed creation of log file
+    handlers = [logging.FileHandler(logfile, delay=True)]
 
-    cfgfile = sys.argv[1]
+    # Display what we log as-is, no level strings etc.
+    logging.basicConfig(handlers=handlers, level=logging.INFO,
+        format='%(message)s')
+
+
+def setup_logging(config:ns.Namespace):
+    """ Final logging setup: allow log location override in config """
+
+    # If no logdir specified, setup is already complete
+    logdir = config.Local._get('logdir')
+    if not logdir: return
+
+    # Determine filename (without path)
+    base, ext = splitext(basename(config.cfgfile))
+    if ext.lower() == '.toml':
+        logfile = f'{base}.log'
+    else:
+        logfile = f'{base}.{ext}.log'
+
+    # Determine filename (with path)
+    name = join(logdir, logfile)
+    if not isabs(logdir):
+        # Logdir not absolute: make it relative to dir config file is in
+        name = join(dirname(config.cfgfile), name)
+
+    # Make sure the log directory exists
+    logdir = dirname(name)
+    os.makedirs(logdir, exist_ok=True)
+
+    # Replace the current logging handler with one using the newly
+    # determined path
+    logger = logging.getLogger()
+    logger.handlers.clear()
+    logger.handlers.append(logging.FileHandler(name, 'a', 'UTF-8'))
+
+
+def unhandled_exception(exc_type, exc_value, exc_traceback):
+    """ Handle otherwise unhandled exceptions by logging them """
+
+    if exc_type == ConfigurationError:
+        msg = exc_value.args[0]
+        logging.error("\n%s", msg)
+    else:
+        msg = f"An error occurred; please see the log file for details.\n\n{exc_value}"
+        logging.exception("\n##### Unhandled exception:", exc_info=(exc_type, exc_value, exc_traceback))
+    msgbox(f"An error occurred; please see the log file for details.\n\n{exc_value}", True)
+    sys.exit(1)
+
+
+# =====
+
+def msgbox(msg, is_error=False):
+    """ Display, if on Windows, a message box """
+
+    if os.name == 'nt':
+        if is_error:
+            flags = 0x30
+            title = "Error"
+        else:
+            flags = 0
+            title = "Info"
+        import ctypes
+        MessageBox = ctypes.windll.user32.MessageBoxW
+        MessageBox(None, msg, title, flags)
+    else:
+        print(msg)
+
+# =====
+
+# Command line overrides for values in the configuration file
+ARGS:List[dict] = [
+]
+
+def parse_args():
+    """Parse command line arguments."""
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("config",
+       help="The (TOML) configuration file to use")
+    parser.add_argument("--no-gui", action='store_true',
+       help="Do not display a message box on completion.")
+    
+    # Add command line overrides
+    for arg in ARGS:
+        kwargs = arg['argparse']
+        names = kwargs.pop('names')
+        parser.add_argument(*names, **kwargs)
+
+    # Replace stdout/stderr to capture argparse output
+    sys.stdout = StringIO()
+    sys.stderr = StringIO()
+    
+    # Check command line
+    try:
+        args = parser.parse_args()
+
+    except SystemExit:
+        # Get argparse output; either an error message in stderr, or
+        # a usage message in stdout.
+        msg, err = sys.stderr.getvalue(), True
+        if not msg:
+            msg = sys.stdout.getvalue()
+            err = False
+        
+        # Show error or usage and exit
+        msgbox(msg, err)
+        raise
+
+    finally:
+        # Restore stdout/stderr
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+    
+    cfgfile = args.config
+    if not isabs(cfgfile) and not exists(cfgfile):
+        cfgfile = join(dirname(__file__), cfgfile)
+    
     if not exists(cfgfile) or not isfile(cfgfile):
-        print(f"File {cfgfile} not found.\nUsage: {sys.argv[0]} <configfile>")
+        msgbox(f"Error: file {cfgfile} not found.\n\n{parser.format_help()}", True)
         sys.exit(1)
     
-    main(cfgfile)
+    if not isabs(cfgfile):
+        cfgfile = abspath(cfgfile)
+    
+    args.config = cfgfile
+
+    return args
+
+
+def merge_overrides(args:argparse.Namespace, config:ns.Namespace):
+    """Merge command line overrides into configuration"""
+    
+    config.no_gui = args.no_gui
+    for arg in ARGS:
+        value = getattr(args, cast(str, arg['name']))
+        if not value:
+            continue
+        ns.set_in_path(config, cast(str, arg['path']), value)
+        
+

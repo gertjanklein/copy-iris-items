@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
+#!venv/Scripts/python
 # encoding: UTF-8
 
-import sys
 import os
 from typing import Any, List, Dict
 import asyncio
 import concurrent.futures
-from os.path import join, isdir, isfile, exists, dirname, isabs, abspath, splitext, basename
+from os.path import join, isdir, dirname
 import logging
 import datetime, time
-import re
 import base64
 import urllib.request as urq
 from urllib.error import URLError
@@ -17,25 +15,15 @@ import json
 import lxml.etree as ET
 
 import data_handler
-from config import get_config, ConfigurationError
+from config import get_config, ConfigurationError, msgbox
 import namespace as ns
 
 
-def main(cfgfile:str):
+def main():
     """ Loads items as specified in the config file """
 
-    # Initial logging setup: file next to ini file. Errors parsing the
-    # config file will be logged here.
-    setup_basic_logging(cfgfile)
-    
-    # Log unhandled exceptions
-    sys.excepthook = unhandled_exception
-
     # Get configuration
-    config = get_config(cfgfile)
-
-    # Final logging setup: file in directory specified in config file.
-    setup_logging(config)
+    config = get_config()
 
     # Setup authorization and cookie handling
     setup_urllib(config)
@@ -79,7 +67,9 @@ def main(cfgfile:str):
     # Cleanup support code
     data_handler.cleanup(config.Server)
 
-    msgbox(f"Copied {count} items.")
+    # Give feedback we're done, unless this was turned off
+    if not config.no_gui:
+        msgbox(f"Copied {count} items.")
 
 
 def get_modified_items(config:ns.Namespace, itemtype:str):
@@ -103,7 +93,7 @@ def get_modified_items(config:ns.Namespace, itemtype:str):
         raise
     
     # Check for configuration issue:
-    if len(data['status']['errors']):
+    if data['status']['errors']:
         e = data['status']['errors'][0]
         if e['code'] == 16004:
             raise ConfigurationError(f"Fout van server: onbekend type item '{itemtype}'.")
@@ -425,95 +415,5 @@ def setup_urllib(config:ns.Namespace):
     urq.install_opener(opener)
 
 
-def setup_basic_logging(cfgfile:str):
-    """ Initial logging setup: log to file next to config file """
-
-    # Determine log file name
-    base, ext = splitext(cfgfile)
-    if ext.lower() == '.toml':
-        logfile = f'{base}.log'
-    else:
-        logfile = f'{cfgfile}.log'
-    
-    # Create handler with delayed creation of log file
-    handlers = [logging.FileHandler(logfile, delay=True)]
-
-    # Display what we log as-is, no level strings etc.
-    logging.basicConfig(handlers=handlers, level=logging.INFO,
-        format='%(message)s')
-
-
-def setup_logging(config:ns.Namespace):
-    """ Final logging setup: allow log location override in config """
-
-    # If no logdir specified, setup is already complete
-    logdir = config.Local._get('logdir')
-    if not logdir: return
-
-    # Determine filename (without path)
-    base, ext = splitext(basename(config.cfgfile))
-    if ext.lower() == '.toml':
-        logfile = f'{base}.log'
-    else:
-        logfile = f'{base}.{ext}.log'
-
-    # Determine filename (with path)
-    name = join(logdir, logfile)
-    if not isabs(logdir):
-        # Logdir not absolute: make it relative to dir config file is in
-        name = join(dirname(config.cfgfile), name)
-
-    # Make sure the log directory exists
-    logdir = dirname(name)
-    os.makedirs(logdir, exist_ok=True)
-
-    # Replace the current logging handler with one using the newly
-    # determined path
-    logger = logging.getLogger()
-    logger.handlers.clear()
-    logger.handlers.append(logging.FileHandler(name, 'a', 'UTF-8'))
-
-
-def unhandled_exception(exc_type, exc_value, exc_traceback):
-    """ Handle otherwise unhandled exceptions by logging them """
-
-    if exc_type == ConfigurationError:
-        msg = exc_value.args[0]
-        logging.error("\n%s", msg)
-    else:
-        msg = f"An error occurred; please see the log file for details.\n\n{exc_value}"
-        logging.exception("\n##### Unhandled exception:", exc_info=(exc_type, exc_value, exc_traceback))
-    msgbox(f"An error occurred; please see the log file for details.\n\n{exc_value}", True)
-    sys.exit(1)
-
-
-def msgbox(msg:str, is_error=False):
-    """ Display, if on Windows, a message box """
-
-    if os.name == 'nt':
-        if is_error:
-            flags = 0x30
-            title = "Error"
-        else:
-            flags = 0
-            title = "Info"
-        import ctypes
-        MessageBox = ctypes.windll.user32.MessageBoxW
-        MessageBox(None, msg, title, flags)
-    else:
-        print(msg)
-
-
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        msgbox(f"Usage: {sys.argv[0]} <cfgfile>", True)
-        sys.exit(1)
-
-    cfgfile = sys.argv[1]
-    if not exists(cfgfile) or not isfile(cfgfile):
-        msgbox(f"File {cfgfile} not found.\nUsage: {sys.argv[0]} <cfgfile>", True)
-        sys.exit(1)
-    
-    main(cfgfile)
-    
-
+    main()
