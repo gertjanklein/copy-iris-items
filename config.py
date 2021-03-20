@@ -224,6 +224,7 @@ def setup_logging(config:ns.Namespace):
     logger = logging.getLogger()
     logger.handlers.clear()
     logger.handlers.append(logging.FileHandler(name, 'a', 'UTF-8'))
+    logger.setLevel(logging.INFO)
 
 
 def unhandled_exception(exc_type, exc_value, exc_traceback):
