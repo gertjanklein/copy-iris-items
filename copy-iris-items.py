@@ -20,10 +20,13 @@ import namespace as ns
 
 
 def main():
-    """ Loads items as specified in the config file """
-
-    # Get configuration
+    # Get configuration and handle command line arguments
     config = get_config()
+    run(config)
+
+
+def run(config):
+    """Loads items as specified in the config file"""
 
     # Setup authorization and cookie handling
     setup_urllib(config)
@@ -239,7 +242,7 @@ def retrieve_item(config:ns.Namespace, item:dict):
 def save_deployable_settings(config:ns.Namespace):
     """ Retrieves and saves Ensemble deployable config settings. """
     
-    logging.info(f"Retrieving and saving Ens.Config.DefaultSettings.esd")
+    logging.info("Retrieving and saving Ens.Config.DefaultSettings.esd")
     
     data = data_handler.get_export(config.Server, 'Ens.Config.DefaultSettings.esd')
     if not data:
