@@ -1,12 +1,18 @@
+
 from typing import List, Dict
-import json
+import threading
+
 import base64
-import urllib.request as urq
-from urllib.error import URLError
 import logging
+
+import requests
 
 import namespace as ns
 from config import ConfigurationError
+
+
+ # Thread local storage for requests session objects
+tls:threading.local
 
 
 def get_modified_items(config:ns.Namespace, itemtype:str):
@@ -19,21 +25,21 @@ def get_modified_items(config:ns.Namespace, itemtype:str):
     scheme = 'https' if svr.https else 'http'
     generated = '1' if config.Project.generated else '0'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/modified/{itemtype}?generated={generated}"
-    rq = urq.Request(url, data=b'[]', headers={'Content-Type': 'application/json'}, method='POST')
-    
+
+    # Get JSON response
     try:
-        # Get and convert to JSON
-        with urq.urlopen(rq) as rsp:
-            data = json.load(rsp)
-    except URLError:
+        session = get_session(svr)
+        rsp = session.post(url, json=[])
+    except requests.exceptions.RequestException:
         logging.error(f"Accessing {url}:")
         raise
-    
+    data = rsp.json()
+
     # Check for configuration issue:
     if data['status']['errors']:
         e = data['status']['errors'][0]
         if e['code'] == 16004:
-            raise ConfigurationError(f"Fout van server: onbekend type item '{itemtype}'.")
+            raise ConfigurationError(f"Error from server: unknown item type '{itemtype}'.")
 
     return data
 
@@ -47,13 +53,14 @@ def get_items_for_type(config:ns.Namespace, itemtype:str):
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/docnames/{itemtype}"
     
-    # Get and convert to JSON
+    # Get JSON response
     try:
-        with urq.urlopen(url) as rsp:
-            data = json.load(rsp)
-    except URLError:
+        session = get_session(svr)
+        rsp = session.get(url)
+    except requests.exceptions.RequestException:
         logging.error(f"Accessing {url}:")
         raise
+    data = rsp.json()
     
     return data
 
@@ -102,12 +109,14 @@ def retrieve_item(config:ns.Namespace, item:dict):
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/doc/{name}"
     
+    # Get JSON response
     try:
-        with urq.urlopen(url) as rsp:
-            data = json.load(rsp)
-    except URLError:
+        session = get_session(svr)
+        rsp = session.get(url)
+    except requests.exceptions.RequestException:
         logging.error(f"Accessing {url}:")
         raise
+    data = rsp.json()
     
     result = data['result']
     content = result['content']
@@ -146,25 +155,17 @@ def check_item(specs:Dict[str,List], item:str):
     return False
 
 
-def init(config:ns.Namespace):
-    """ Setup urllib opener for auth and cookie handling """
+def get_session(svr:ns.Namespace):
+    """ Returns the requests session, creating it if absent """
 
-    svr = config.Server
+    if not hasattr(tls, "session"):
+        print("Creating session", str(threading.current_thread()))
+        tls.session = requests.Session()
+        tls.session.auth = (svr.user, svr.password)
+    return tls.session
 
-    # Setup a (preemptive) basic auth handler
-    password_mgr = urq.HTTPPasswordMgrWithPriorAuth()
-    scheme = 'https' if svr.https else 'http'
-    password_mgr.add_password(None, f"{scheme}://{svr.host}:{svr.port}/",
-        svr.user, svr.password, is_authenticated=True)
-    auth_handler = urq.HTTPBasicAuthHandler(password_mgr)
 
-    # Setup the cookie handler
-    cookiejar = config.cookiejar
-    cookie_handler = urq.HTTPCookieProcessor(cookiejar)
-
-    # Create an opener using these handlers, and make it default
-    opener = urq.build_opener(auth_handler, cookie_handler)
-    opener.addheaders = [('Accept', 'application/json')]
-    urq.install_opener(opener)
-
+def cleanup():
+    if hasattr(tls, "session"):
+        tls.session.close()
 

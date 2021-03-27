@@ -2,19 +2,23 @@
 # encoding: UTF-8
 
 import os
-from typing import Any, List, Dict
-import asyncio
-import concurrent.futures
 from os.path import join, isdir, dirname
+from typing import Any, List, Dict
+from concurrent.futures import ThreadPoolExecutor
+import threading
 import logging
 import datetime, time
+
 import lxml.etree as ET
 
-import data_handler
-from config import get_config, ConfigurationError, msgbox
 import namespace as ns
-
+from config import get_config, ConfigurationError, msgbox
+import data_handler
 import retrieval as ret
+
+
+# Thread-local storage for requests session objects
+tls = threading.local()
 
 
 def main():
@@ -26,13 +30,13 @@ def main():
 def run(config):
     """Loads items as specified in the config file"""
 
-    # Setup authorization and cookie handling
-    ret.init(config)
-
     # If needed, make sure we have the support code to retrieve data exports
     project = config.Project
     if project.enssettings.name or project.lookup:
-        data_handler.init(config.Server)
+        data_handler.init(config, tls)
+    
+    # Place thread local storage object in retrieval module
+    ret.tls = tls
 
     # Log appends; create visible separation for this run
     now = str(datetime.datetime.now())
@@ -65,8 +69,9 @@ def run(config):
     if config.Local.cookies:
         config['cookiejar'].save(ignore_discard=True)
 
-    # Cleanup support code
+    # Cleanup
     data_handler.cleanup(config.Server)
+    ret.cleanup()
 
     # Give feedback we're done, unless this was turned off
     if not config.no_gui:
@@ -202,25 +207,13 @@ def save_items(config:ns.Namespace, items:List):
     # Check if/how many threads we should use:
     threads = config.Server.threads
     if threads > 1:
-        # Use coroutine and ThreadPoolExecutor
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(save_items_parallel(config, items, threads))
+        with ThreadPoolExecutor(max_workers=threads) as executor:
+            for item in items:
+                executor.submit(save_item, config, item)
     else:
         # Just save the items one by one
         for item in items:
             save_item(config, item)
-
-
-async def save_items_parallel(config:ns.Namespace, items:List, max_workers:int):
-    """ Retrieves and saves items in parallel """
-    
-    futures = []
-    loop = asyncio.get_event_loop()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        for item in items:
-            future = loop.run_in_executor(executor, save_item, config, item)
-            futures.append(future)
-    await asyncio.gather(*futures)
 
 
 def save_item(config:ns.Namespace, item:Dict[str,Any]):
