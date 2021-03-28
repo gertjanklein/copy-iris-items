@@ -1,9 +1,10 @@
 
 from typing import List, Dict
 import threading
-
 import base64
 import logging
+import http.cookiejar
+from io import StringIO
 
 import requests
 
@@ -28,8 +29,7 @@ def get_modified_items(config:ns.Namespace, itemtype:str):
 
     # Get JSON response
     try:
-        session = get_session(svr)
-        rsp = session.post(url, json=[])
+        rsp = tls.session.post(url, json=[])
     except requests.exceptions.RequestException:
         logging.error(f"Accessing {url}:")
         raise
@@ -55,8 +55,7 @@ def get_items_for_type(config:ns.Namespace, itemtype:str):
     
     # Get JSON response
     try:
-        session = get_session(svr)
-        rsp = session.get(url)
+        rsp = tls.session.get(url)
     except requests.exceptions.RequestException:
         logging.error(f"Accessing {url}:")
         raise
@@ -111,8 +110,7 @@ def retrieve_item(config:ns.Namespace, item:dict):
     
     # Get JSON response
     try:
-        session = get_session(svr)
-        rsp = session.get(url)
+        rsp = tls.session.get(url)
     except requests.exceptions.RequestException:
         logging.error(f"Accessing {url}:")
         raise
@@ -155,15 +153,15 @@ def check_item(specs:Dict[str,List], item:str):
     return False
 
 
-def get_session(svr:ns.Namespace):
-    """ Returns the requests session, creating it if absent """
-
-    if not hasattr(tls, "session"):
-        print("Creating session", str(threading.current_thread()))
-        tls.session = requests.Session()
-        tls.session.auth = (svr.user, svr.password)
-    return tls.session
-
+def init(auth, cookie_data):
+    tls.session = requests.Session()
+    if auth[0]:
+        tls.session.auth = auth
+    if cookie_data:
+        jar = http.cookiejar.LWPCookieJar()
+        datastream = StringIO(cookie_data)
+        jar._really_load(datastream, "<copy>", ignore_discard=True, ignore_expires=False)
+        tls.session.cookies = jar
 
 def cleanup():
     if hasattr(tls, "session"):

@@ -66,7 +66,9 @@ def get_config() -> ns.Namespace:
     svr = config.Server
     cookiefile = f"cookies;{svr['host']};{svr['port']}.txt"
     cookiefile = join(dirname(__file__), cookiefile)
-    config.cookiejar = http.cookiejar.LWPCookieJar(cookiefile, delayload=False)
+    config.cookiejar = http.cookiejar.LWPCookieJar(cookiefile)
+    if exists(cookiefile):
+        config.cookiejar.load(ignore_discard=True)
 
     # File encoding defaults to UTF-8
     config.encoding = local.encoding if local.encoding else 'UTF-8'

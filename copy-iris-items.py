@@ -9,6 +9,7 @@ import threading
 import logging
 import datetime, time
 
+import requests
 import lxml.etree as ET
 
 import namespace as ns
@@ -29,6 +30,9 @@ def main():
 
 def run(config):
     """Loads items as specified in the config file"""
+
+    # Initialize requests session and check server accessibility
+    init(config)
 
     # If needed, make sure we have the support code to retrieve data exports
     project = config.Project
@@ -65,10 +69,6 @@ def run(config):
     if project.lookup:
         count += save_lookup_tables(config)
     
-    # Save cookies for reuse if we call the same server quickly again
-    if config.Local.cookies:
-        config['cookiejar'].save(ignore_discard=True)
-
     # Cleanup
     data_handler.cleanup(config.Server)
     ret.cleanup()
@@ -207,7 +207,13 @@ def save_items(config:ns.Namespace, items:List):
     # Check if/how many threads we should use:
     threads = config.Server.threads
     if threads > 1:
-        with ThreadPoolExecutor(max_workers=threads) as executor:
+        # Pass to worker threads: login information and cookies
+        svr = config.Server
+        auth = (svr.user, svr.password) if svr.user else ()
+        cookie_data = "#LWP-Cookies-2.0\n" + tls.session.cookies.as_lwp_str()
+        args = (auth, cookie_data)
+        with ThreadPoolExecutor(max_workers=threads, 
+                initializer=ret.init, initargs=args) as executor:
             for item in items:
                 executor.submit(save_item, config, item)
     else:
@@ -263,6 +269,28 @@ def set_file_datetime(filename:str, timestamp:str):
     tm = time.mktime(dt.timetuple())
     # Set access end modified times
     os.utime(filename, (tm, tm))
+
+
+def init(config:ns.Namespace):
+    # Set up the main thread requests session, and give it our cookie jar
+    svr = config.Server
+    tls.session = requests.Session()
+    tls.session.cookies = config.cookiejar
+    if config.Server.user:
+        tls.session.auth = (svr.user, svr.password)
+    
+    # Make sure the server can be reached
+    try:
+        scheme = 'https' if svr.https else 'http'
+        url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/"
+        tls.session.get(url)
+    except requests.exceptions.RequestException:
+        logging.error(f"Accessing [POST] {url}:")
+        raise
+    
+    # Save cookies for reuse if we call the same server quickly again
+    if config.Local.cookies:
+        config.cookiejar.save(ignore_discard=True)
 
 
 if __name__ == '__main__':
