@@ -87,10 +87,10 @@ Additional configuration options in this section are:
   e.g. database _HSLOCAL_.
 * **generated** (true|false, default false) specifies whether to include
   generated classes, if they match the item specs.
-* **lookup** is a list of Ensemble _data lookup tables_ to retrieve, if any.
-  These are saved in the configured data directory, with a `.lut` extension.
-  (They may be specified with or without.) Wildcards are supported as with
-  _items_ above.
+* **lookup** is a list of Ensemble _data lookup tables_ to retrieve, if
+  any. These are saved in the configured data directory, with a `.lut`
+  extension. (Specify them without extension.) Wildcards are supported
+  as with _items_ above.
 
 ## Project.enssettings
 
