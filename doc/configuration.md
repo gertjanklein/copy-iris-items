@@ -64,7 +64,7 @@ Some examples:
 * `[ 'Strix.*.cls' ]` This list contains a single specification. It will
   retrieve all classes in package `Strix`, including subpackages.
 * `[ 'Strix.*.cls', '-Strix.Tests.*.cls' ]` Includes all classes in
-  package `Strix` and subpackages, except those in package `Strix.Test`
+  package `Strix` and subpackages, except those in package `Strix.Tests`
   (and subpackages).
 
 Exclude specifications (those prefixed with a minus) are always
@@ -97,8 +97,9 @@ Additional configuration options in this section are:
 This subsection of [Project](#project) specifies if and how to retrieve the
 Ensemble _system default settings_. The configuration options are:
 
-* **name** should be either `Ens.Config.DefaultSettings.esd` (to retrieve
-  them) or empty.
+* **name** specifies the file name to save the settings under; if empty,
+  the settings will not be saved. The conventional name is
+  `Ens.Config.DefaultSettings.esd`.
 * **strip** (true|false, default false) specifies whether the actual
   values in the default settings should be stripped when retrieving
   them.
@@ -125,11 +126,12 @@ Configuration options are:
   `{cfgname}\src`.
 * **cspdir** is the directory to save CSP items to. Defaults to
   `{cfgname}\csp`. This should be placed outside the non-CSP items
-  directory, so these can be loaded with e.g. `$System.OBJ.ImportDir()`.
+  directory, so these could be loaded with e.g.
+  `$System.OBJ.ImportDir()`.
 * **datadir** is the directory to save data files to. Defaults to
   `{cfgname}\data`. Keep these separate as well.
 * **logdir** is the directory for the log file. If empty, the log file
-  is placed adjacent to the configuration file. It will always have
+  is placed adjacent to the configuration file. The file name is
   the name of the config file, with ".toml" replaced with ".log".
 * **encoding** specifies the encoding to use to save files in; it
   defaults to `UTF-8`, which is appropriate in most cases. For a list of
