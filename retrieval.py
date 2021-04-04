@@ -5,6 +5,7 @@ import base64
 import logging
 import http.cookiejar
 from io import StringIO
+from time import sleep
 
 import requests
 
@@ -166,4 +167,6 @@ def init(auth, cookie_data):
 def cleanup():
     if hasattr(tls, "session"):
         tls.session.close()
+        # Needed to prevent unclosed socket ResourceWarning
+        sleep(0.001)
 

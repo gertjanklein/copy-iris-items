@@ -4,7 +4,7 @@
 import os
 from os.path import join, isdir, dirname
 from typing import Any, List, Dict
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 import threading
 import logging
 import datetime, time
@@ -207,19 +207,36 @@ def save_items(config:ns.Namespace, items:List):
     # Check if/how many threads we should use:
     threads = config.Server.threads
     if threads > 1:
-        # Pass to worker threads: login information and cookies
-        svr = config.Server
-        auth = (svr.user, svr.password) if svr.user else ()
-        cookie_data = "#LWP-Cookies-2.0\n" + tls.session.cookies.as_lwp_str()
-        args = (auth, cookie_data)
-        with ThreadPoolExecutor(max_workers=threads, 
-                initializer=ret.init, initargs=args) as executor:
-            for item in items:
-                executor.submit(save_item, config, item)
-    else:
-        # Just save the items one by one
+        save_items_parallel(config, items, threads)
+        return
+    
+    # Just save the items one by one
+    for item in items:
+        save_item(config, item)
+
+
+def save_items_parallel(config:ns.Namespace, items:List, threads:int):
+    """ Saves items in parallel """
+
+    # Pass to worker threads: login information and cookies
+    svr = config.Server
+    auth = (svr.user, svr.password) if svr.user else ()
+    cookie_data = "#LWP-Cookies-2.0\n" + tls.session.cookies.as_lwp_str()
+    args = (auth, cookie_data)
+
+    futures = []
+    with ThreadPoolExecutor(max_workers=threads, 
+            initializer=ret.init, initargs=args) as executor:
+        # Retrieve the items
         for item in items:
-            save_item(config, item)
+            futures.append(executor.submit(save_item, config, item))
+        wait(futures)
+        
+        # Call cleanup code to release requests sessions
+        futures.clear()
+        for _ in range(threads):
+            futures.append(executor.submit(ret.cleanup))
+        wait(futures)
 
 
 def save_item(config:ns.Namespace, item:Dict[str,Any]):
