@@ -34,9 +34,9 @@ When code one person is working on is ready to check in, they can:
 * check in and optionally push their code
 
 (Note that this program does not in any way handle the repository or
-checkin process. This is best left to specialized tools; for git/GitHub,
-e.g. [TortoiseGit](https://tortoisegit.org/) or
-[GitHub Desktop](https://desktop.github.com/) could be used.)
+check-in process. This is best left to specialized tools; for
+git/GitHub, e.g. [TortoiseGit](https://tortoisegit.org/) or [GitHub
+Desktop](https://desktop.github.com/) could be used.)
 
 The program is most conveniently used as a drop target for the
 configuration file. See template.toml for the possible configurations.
@@ -52,9 +52,8 @@ settings can be downloaded.
 
 The application is a Python (version 3.6+) script. In addition to the
 Python standard library, it only uses the
-[toml library](https://pypi.org/project/toml/).
-It is known to work with Python 3.7, but other versions probably work as
-well.
+[toml](https://pypi.org/project/toml/) and [lxml](https://lxml.de/)
+libraries. It is known to work with Python 3.7-3.9.
 
 On the server side, the program uses part of the Atelier REST API that
 is used for the same purpose by InterSystems Atelier. As a result, it
@@ -66,8 +65,19 @@ later.
 You can download a binary release for Windows
 [here](https://github.com/gertjanklein/copy-iris-items/releases). The
 program has no installer; just unzip it somewhere appropriate. The
-Python script can also be used directly; make sure the toml and lxml
-libraries are avaiable (`pip install toml lxml`).
+executable is built with Python 3.9, and needs Windows 8 or higher to
+run.
+
+The Python script can also be used directly. Using a virtual
+environment, setup (after checkout or download of the code) would be
+something like this:
+
+```shell
+py -3.9 -m venv venv
+venv\Scripts\activate
+python -m pip install -U pip
+pip install toml lxml
+```
 
 Configuration is described in more detail [here](doc/configuration.md).
 The [template configuration file](template.toml) also contains
@@ -77,8 +87,8 @@ It is easiest to create a shortcut to the program (either script or
 binary) next to the configuration file, and drag and drop it on the
 shortcut when you want to run the program with it. Alternatively, a
 batch/command file could be created that calls the program path+name
-with the configuration filename as its single commandline argument. This
-batch file can then be doubleclicked to start the synchronization.
+with the configuration filename as its single command-line argument.
+This batch file can then be double-clicked to start the synchronization.
 
 When the program is done, a simple popup shows the number of items
 that were synchronized. This may take a few seconds for large projects,
