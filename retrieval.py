@@ -167,6 +167,6 @@ def init(auth, cookie_data):
 def cleanup():
     if hasattr(tls, "session"):
         tls.session.close()
-        # Needed to prevent unclosed socket ResourceWarning
-        sleep(0.001)
+        # Slight delay so other threads get assigned a cleanup task as well
+        sleep(0.005)
 
