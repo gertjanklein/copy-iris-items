@@ -1,0 +1,7 @@
+wheel
+toml
+lxml
+pylint
+pytest
+pytest-docker
+mypy

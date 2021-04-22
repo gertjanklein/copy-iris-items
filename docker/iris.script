@@ -1,0 +1,5 @@
+Set sc=$System.OBJ.ImportDir("/opt/irisbuild/src",,"ck-d",,1)
+If sc { w "Code loaded ok",! } Else { Do $System.Status.DisplayError(sc) }
+ZN "%SYS"
+Do ##class(Security.Users).UnExpireUserPasswords("*")
+Halt

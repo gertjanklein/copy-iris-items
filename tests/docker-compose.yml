@@ -1,0 +1,8 @@
+version: '3.6'
+services:
+  copy-iris-items-testsvr:
+    image: copy-iris-items-testsvr
+    ports:
+      # Map any port in this range to IRIS API port
+      - "12000-12500:52773"
+
