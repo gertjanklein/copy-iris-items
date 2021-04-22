@@ -161,10 +161,10 @@ def check(config:ns.Namespace):
     ns.check_default(project, 'items', [])
     ns.check_default(project, 'lookup', [])
 
-    ens = ns.get_section(project, 'enssettings')
-    if ens:
-        ns.check_default(ens, 'name', '')
-        ns.check_default(ens, 'strip', True)
+    ens = ns.get_section(project, 'enssettings', create=True)
+    assert ens is not None # silence mypy
+    ns.check_default(ens, 'name', '')
+    ns.check_default(ens, 'strip', True)
 
     local = ns.check_section(config, "Local")
     ns.check_default(local, 'dir', '')
