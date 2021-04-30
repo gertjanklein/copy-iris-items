@@ -7,7 +7,7 @@ from typing import Any
 import logging
 
 import requests
-from requests.exceptions import ConnectionError
+from requests.exceptions import RequestException
 from requests.auth import HTTPBasicAuth
 
 import pytest
@@ -36,11 +36,11 @@ def is_responsive(url:str, auth:HTTPBasicAuth):
     """
 
     try:
-        response = requests.get(url, auth=auth, timeout=1)
+        response = requests.get(url, auth=auth, timeout=0.5)
         if response.status_code == 200:
             return True
         raise ValueError(f"Unexpected status code '{response.status_code}'.")
-    except ConnectionError:
+    except RequestException:
         return False
     return False
 
