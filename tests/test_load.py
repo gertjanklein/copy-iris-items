@@ -4,27 +4,11 @@ from importlib import import_module
 from typing import Any
 
 import pytest
-import docker
 
 copier = import_module("copy-iris-items") # type: Any
 
 
-# Check whether docker(-compose) is available
-try:
-    client = docker.from_env()
-    NODOCKER = False
-    del client
-except docker.errors.DockerException:
-    NODOCKER = True
-
-
 CFG = """
-[Server]
-host = "{host}"
-port = "{port}"
-namespace = "{ns}"
-user = "SuperUser"
-password = "SYS"
 [Local]
 dir = '{dir}/src'
 logdir = '{dir}'
@@ -33,17 +17,17 @@ items = ['Strix.Std.*.cls']
 """
 
 
-@pytest.mark.skipif(NODOCKER, reason="Docker not available.")
 @pytest.mark.usefixtures("reload_modules")
-def test_connect(tmpdir, iris, get_files):
-    """Retrieve and build specific packge."""
-    host, port = iris
-    toml = CFG.format(host=host, port=port, dir=tmpdir, ns="USER")
-    get_files(toml, tmpdir)
+def test_load(tmp_path, server_toml, get_files):
+    """Test loading a package """
+    
+    cfg = CFG.format(dir=tmp_path)
+    toml = f"{cfg}\n{server_toml}"
+    get_files(toml, tmp_path)
     expect = 'Strix.Std.EAN.cls,Strix.Std.IBAN.cls,Strix.Std.VATNumber.cls'
-    got = list_files(join(tmpdir, 'src'))
+    got = list_files(join(tmp_path, 'src'))
     check_files(expect, got)
-
+    
 
     # =====
 
