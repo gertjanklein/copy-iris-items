@@ -137,7 +137,7 @@ def save_deployable_settings(config:ns.Namespace):
     fname = join(config.datadir, config.Project.enssettings.name)
     
     # Remove timestamp and version from export
-    root = ET.fromstring(data.encode('UTF-8'))
+    root = ET.fromstring(data.encode('UTF-8')) # type: ignore
     for name in 'ts', 'zv':
         if name in root.attrib:
             del root.attrib[name]
@@ -150,7 +150,7 @@ def save_deployable_settings(config:ns.Namespace):
     
     # tostring doesn't return an XML declaration
     data = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    data += ET.tostring(root, encoding='unicode')
+    data += ET.tostring(root, encoding='unicode') # type: ignore
     
     with open(fname, 'w', encoding='UTF-8') as f:
         f.write(data + '\n')
@@ -181,13 +181,13 @@ def save_lookup_tables(config:ns.Namespace):
             continue
         
         # Remove timestamp and version from export
-        root = ET.fromstring(data.encode('UTF-8'))
+        root = ET.fromstring(data.encode('UTF-8')) # type: ignore
         for name in 'ts', 'zv':
             if name in root.attrib:
                 del root.attrib[name]
         # tostring doesn't return an XML declaration
         data = '<?xml version="1.0" encoding="UTF-8"?>\n'
-        data += ET.tostring(root, encoding='unicode')
+        data += ET.tostring(root, encoding='unicode') # type: ignore
 
         # Make sure the output directory exists
         if not isdir(config.datadir):
@@ -302,12 +302,28 @@ def init(config:ns.Namespace):
         url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/"
         tls.session.get(url)
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing [POST] {url}:")
+        logging.error(f"Accessing [POST] {url}:") # type: ignore
         raise
     
     # Save cookies for reuse if we call the same server quickly again
     if config.Local.cookies:
         config.cookiejar.save(ignore_discard=True)
+
+
+def cleanup_logging():
+    """ Closes all resources taken by the loggers' handlers """
+
+    # Get root logger
+    loggers = [logging.getLogger()]
+    # Get all other loggers, if any
+    logger_names = logging.root.manager.loggerDict # pylint: disable=no-member
+    loggers = loggers + [logging.getLogger(name) for name in logger_names]
+
+    # Call close() on each handler in each logger
+    for logger in loggers:
+        for handler in logger.handlers:
+            handler.close()
+        logger.handlers.clear()
 
 
 if __name__ == '__main__':

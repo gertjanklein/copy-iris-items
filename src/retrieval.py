@@ -161,8 +161,8 @@ def init(auth, cookie_data):
     if cookie_data:
         jar = http.cookiejar.LWPCookieJar()
         datastream = StringIO(cookie_data)
-        jar._really_load(datastream, "<copy>", ignore_discard=True, ignore_expires=False)
-        tls.session.cookies = jar
+        jar._really_load(datastream, "<copy>", ignore_discard=True, ignore_expires=False) # type: ignore
+        tls.session.cookies = jar # type: ignore
 
 def cleanup():
     if hasattr(tls, "session"):
