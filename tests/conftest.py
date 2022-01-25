@@ -1,5 +1,6 @@
 from typing import Any
 import sys
+from os import scandir
 from os.path import dirname, join, exists
 from importlib import reload, import_module
 from unittest.mock import patch
@@ -24,6 +25,7 @@ def reload_modules():
     copier.cleanup_logging()
     reload(sys.modules['logging'])
     reload(sys.modules['config'])
+    reload(sys.modules['data_handler'])
     reload(sys.modules['copy-iris-items'])
 
 
@@ -42,6 +44,24 @@ def get_files():
             cfg = config.get_config()
         copier.run(cfg)
     return get_files
+
+
+# Generic helpers
+
+def list_files(dir, base=''):
+    """
+    Lists files in a directory and subdirectories; returns relative paths.
+    """
+
+    names = []
+    with scandir(dir) as it:
+        for f in it:
+            relname = '/'.join((base,f.name)) if base else f.name
+            if f.is_file():
+                names.append(relname)
+            else:
+                names.extend(list_files(join(dir, f.name), relname))
+    return names
 
 
 # Helpers for the server determination code below

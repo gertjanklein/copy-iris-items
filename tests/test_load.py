@@ -1,9 +1,10 @@
-from os import scandir
 from os.path import join
 from importlib import import_module
 from typing import Any
 
 import pytest
+
+from conftest import list_files
 
 copier = import_module("copy-iris-items") # type: Any
 
@@ -41,21 +42,5 @@ def check_files(expected, got):
     expected.sort()
     got.sort()
     assert expected == got, f"Should get {expected}, got {got}"
-
-
-def list_files(dir, base=''):
-    """
-    Lists files in a directory and subdirectories; returns relative paths.
-    """
-
-    names = []
-    with scandir(dir) as it:
-        for f in it:
-            relname = '/'.join((base,f.name)) if base else f.name
-            if f.is_file():
-                names.append(relname)
-            else:
-                names.extend(list_files(join(dir, f.name), relname))
-    return names
 
 
