@@ -18,30 +18,63 @@ class Namespace(SimpleNamespace):
 
     def __getitem__(self, name):
         """Add support for value = ns['key']."""
+
         return self.__dict__[name]
     
     def __setitem__(self, key, value):
         """Add support for ns['key'] = value."""
+
         self.__dict__[key] = value
 
     def __getattribute__(self, name):
         """Add support for local attributes."""
+
         try:
+            # If an actual attribute <name> is present, return that
             return object.__getattribute__(self, name)
         except AttributeError:
-            return self.__dict__[name]
+            # Delegate to the key/value dictionary
+            try:
+                return self.__dict__[name]
+            except KeyError:
+                raise AttributeError(name) from None
     
     def __delattr__(self, name):
         """Add support for deleting values."""
+
         d = object.__getattribute__(self, '__dict__')
         del d[name]
 
+    def __contains__(self, name):
+        """Add support for in operator."""
+        return self.__dict__.__contains__(name)
+
+    def __iter__(self):
+        """Add support for iteration."""
+
+        return self.__dict__.__iter__()
+
+    # ----- Helper methods
+
     def _get(self, key, default=None):
         """Retrieve a value, or default if not found."""
+
         return self.__dict__.get(key, default)
 
-    def __contains__(self, name):
-        return self.__dict__.__contains__(name)
+    def _flattened(self, _prefix=None):
+        """Yields (dotted name, value) pairs for all values."""
+        
+        for key in self:
+            if key == '_name':
+                continue
+            value = self[key]
+            key = f"{_prefix}.{key}" if _prefix else key
+            if isinstance(value, type(self)):
+                yield from value._flattened(key)
+            else:
+                yield key, value
+
+
 
 
 def dict2ns(input:Mapping) -> Namespace:
@@ -82,7 +115,6 @@ def ns2dict(input:Namespace) -> dict:
 def set_in_path(ns:Namespace, path:str, value):
     """Sets a value in a sub-namespace, assuring it exists."""
 
-    assert '.' in path
     parts = path.split('.')
     # Add sub-namespaces, if not present
     for name in parts[:-1]:
@@ -117,16 +149,19 @@ def get_in_path(ns:Namespace, path:str, default=None):
 class ConfigurationError(ValueError):
     """Exception to signal detected error in configuration."""
 
-def get_section(config:Namespace, name:str, create:bool=False) -> Optional[Namespace]:
-    """Returns a section if it exists."""
+def get_section(config:Namespace, name:str, create=False) -> Optional[Namespace]:
+    """Returns a section if it exists; optionally creates if not."""
     
     section = config._get(name)
     if section is None:
-        if create:
-            config[name] = Namespace()
-            config[name]['_name'] = name
-            return config[name]
-        return None
+        if not create:
+            return None
+        
+        section = Namespace()
+        config[name] = section
+        config[name]['_name'] = name
+        return section
+        
     if not isinstance(section, Namespace):
         raise ConfigurationError(f"Configuration error: {name} not a section")
     return section
@@ -158,14 +193,16 @@ def check_oneof(section:Namespace, name:str, oneof:Iterable, default=None):
         section[name] = default
         return
     if value in oneof: return
-    raise ConfigurationError(f"Configuration error: {section._name}:{name} must be one of {str(oneof)}")
+    disp_name = f'{section._name}:{name}' if '_name' in section else name
+    raise ConfigurationError(f"Configuration error: {disp_name} must be one of {str(oneof)}")
 
 def check_notempty(section:Namespace, name:str):
     """Raises if value not supplied or empty."""
 
     value = section._get(name)
     if value: return
-    raise ConfigurationError(f"Configuration error: {section._name}:{name} must be present and non-empty")
+    disp_name = f'{section._name}:{name}' if '_name' in section else name
+    raise ConfigurationError(f"Configuration error: {disp_name} must be present and non-empty")
 
 def check_encoding(section:Namespace, name:str, default):
     """Raises if specified encoding is unknown."""
@@ -175,5 +212,6 @@ def check_encoding(section:Namespace, name:str, default):
     try:
         codecs.lookup(encoding)
     except LookupError:
-        msg = f"Configuration error: {section._name}:{name}: '{encoding}' is an unrecognised encoding"
+        disp_name = f'{section._name}:{name}' if '_name' in section else name
+        msg = f"Configuration error: {disp_name}: '{encoding}' is an unrecognised encoding"
         raise ConfigurationError(msg) from None
