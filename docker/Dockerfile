@@ -1,5 +1,5 @@
 # The IRIS image to use
-ARG IMAGE=store/intersystems/iris-community:2021.1.0.215.3
+ARG IMAGE=store/intersystems/iris-community:2021.2.0.649.0
 FROM $IMAGE
 
 # The Strix commit to load files to use for testing from
