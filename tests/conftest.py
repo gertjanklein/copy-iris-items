@@ -46,6 +46,19 @@ def get_files():
     return get_files
 
 
+@pytest.fixture
+def get_config_ns():
+    def get_config_ns(toml:str, tmp_path):
+        cfgfile = str(tmp_path / 'cfg.toml')
+        with open(cfgfile, 'wt') as f:
+            f.write(toml)
+        args = ['copier', cfgfile, '--no-gui']
+        with patch('sys.argv', args):
+            cfg = config.get_config()
+        return cfg
+    return get_config_ns
+    
+
 # Generic helpers
 
 def list_files(dir, base=''):

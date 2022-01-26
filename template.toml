@@ -74,6 +74,14 @@ subdirs = true
 # licence can be retained between runs.
 cookies = false
 
-# Disable fix that makes sure the last newline of the file is present.
-# Only use this for backward compatibility.
+
+# ===== Backwards compatibility settings; should not normally
+# ===== be changed.
+
+# Disable fix that makes sure the last newline of routines is
+# present.
 disable_eol_fix = false
+
+# Disable fix that makes sure the last newline of classes is
+# present.
+disable_class_eol_fix = false

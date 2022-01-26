@@ -106,11 +106,9 @@ def get_specs(input):
 def get_lookup_specs(input):
     """ Get data lookup specifications and convert to regular expressions. """
 
-    specs = [ spec for spec in input ]
-    
     # Convert specifications to regexes for matching
     regexes = { '+': [], '-': [] }
-    for spec in specs:
+    for spec in input:
         # Exclusion spec?
         if spec[0] == '-':
             spec = spec[1:]
@@ -173,8 +171,11 @@ def check(config:ns.Namespace):
     ns.check_default(local, 'logdir', '')
     ns.check_default(local, 'subdirs', False)
     ns.check_default(local, 'cookies', False)
-    ns.check_default(local, 'disable_eol_fix', False)
     ns.check_encoding(local, 'encoding', 'UTF-8')
+    
+    # Backwards compatibility settings
+    ns.check_default(local, 'disable_eol_fix', False)
+    ns.check_default(local, 'disable_class_eol_fix', False)
 
 
 # =====

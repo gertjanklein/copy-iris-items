@@ -153,3 +153,9 @@ Configuration options are:
   With this fix, exporting and re-importing does not change the file.
   Disabling this fix could be useful to prevent many whitespace-only
   changes in an existing repository.
+* **disable_class_eol_fix** (true|false, default false) allows, like the
+  setting above, disabling a fix that ensures the proper number of
+  newlines when exporting classes. On versions 0.5 and below, one final
+  newline was stripped. With this fix, exporting and re-importing does
+  not change the file. Disabling this fix could be useful to prevent
+  many whitespace-only changes in an existing repository.

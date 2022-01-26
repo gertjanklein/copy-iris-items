@@ -126,6 +126,12 @@ def retrieve_item(config:ns.Namespace, item:dict):
     if not nofix and result['cat'] in ('CSP', 'RTN') and not result['enc']:
         content.append('')
     
+    # The join below will also remove one line from class exports. Fix that
+    # unless turned off.
+    nofix = config.Local.disable_class_eol_fix
+    if not nofix and result['cat'] == 'CLS' and not result['enc']:
+        content.append('')
+    
     # Contents may be returned line-by-line: always for text, and for
     # base-64 if too big.
     content = '\n'.join(content)
