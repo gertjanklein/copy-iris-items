@@ -3,11 +3,13 @@ from typing import Any
 from importlib import import_module
 
 import requests
+import toml
 
 import pytest
 from conftest import list_files
 
 import namespace as ns
+import config
 copier = import_module("copy-iris-items") # type: Any
 
 
@@ -40,40 +42,69 @@ CREATE PROCEDURE GetExport(Name SYSNAME) FOR Tmp.CII.Tests RETURNS CHAR LANGUAGE
 # Base configuration toml data to use. Templates will be replaced,
 # and server information appended.
 CFG = """
+[Project]
+items = ['{name}']
 [Local]
 dir = '{dir}/src'
 logdir = '{dir}'
-[Project]
-items = ['{name}']
 """
 
 
 @pytest.mark.usefixtures("reload_modules")
-def test_class_newlines(tmp_path, server_toml, get_files, get_config_ns):
+def test_class_newlines(tmp_path, server_toml, get_files):
     """ Tests classes export the same data as $System.OBJ """
     
     name = 'Strix.Std.EAN.cls'
-    compare_exports(tmp_path, server_toml, get_files, get_config_ns, name)
     
+    cfg = CFG.format(dir=tmp_path, name=name)
+    cfg = f"{cfg}\n{server_toml}"
+    
+    compare_exports(tmp_path, get_files, cfg, name)
+    
+@pytest.mark.usefixtures("reload_modules")
+def test_class_newlines_prev(tmp_path, server_toml, get_files):
+    """ Tests classes with backwards compatibility setting """
+    
+    name = 'Strix.Std.EAN.cls'
+    
+    cfg = CFG.format(dir=tmp_path, name=name)
+    cfg = f"{cfg}\ndisable_class_eol_fix=true\n{server_toml}"
+    
+    compare_exports(tmp_path, get_files, cfg, name, True)
+    
+# ---
 
 @pytest.mark.usefixtures("reload_modules")
-def test_inc_newlines(tmp_path, server_toml, get_files, get_config_ns):
+def test_inc_newlines(tmp_path, server_toml, get_files):
     """ Tests include files export the same data as $System.OBJ """
     
     name = 'Strix.inc'
-    compare_exports(tmp_path, server_toml, get_files, get_config_ns, name)
+    
+    cfg = CFG.format(dir=tmp_path, name=name)
+    cfg = f"{cfg}\n{server_toml}"
+    
+    compare_exports(tmp_path, get_files, cfg, name)
+    
+@pytest.mark.usefixtures("reload_modules")
+def test_inc_newlines_prev(tmp_path, server_toml, get_files):
+    """ Tests include files with backwards compatibility setting """
+    
+    name = 'Strix.inc'
+    
+    cfg = CFG.format(dir=tmp_path, name=name)
+    cfg = f"{cfg}\ndisable_eol_fix=true\n{server_toml}"
+    
+    compare_exports(tmp_path, get_files, cfg, name, True)
     
 
-# =====
+# ===== Helpers
 
 
-def compare_exports(tmp_path, server_toml, get_files, get_config_ns, name):
+def compare_exports(tmp_path, get_files, cfg_toml, name, addline=False):
     """ Compares exports to $System.OBJ.ExportUDL. """
     
     # First retrieve the data using copy-iris-items
-    cfg = CFG.format(dir=tmp_path, name=name)
-    toml = f"{cfg}\n{server_toml}"
-    get_files(toml, tmp_path)
+    get_files(cfg_toml, tmp_path)
     expect = [name]
     got = list_files(join(tmp_path, 'src'))
     
@@ -84,11 +115,19 @@ def compare_exports(tmp_path, server_toml, get_files, get_config_ns, name):
     with open(join(tmp_path, 'src', name), 'rt') as f:
         data_from_api = f.read()
     
-    # Get configuration namespace object
-    cfg = get_config_ns(toml, tmp_path)
+    # Add a line to the copy-iris-items export, if so requested. This
+    # should remove the difference, created by a backward-compatibility
+    # setting, with the data retrieved below.
+    if addline:
+        data_from_api += '\n'
+    
+    # Convert config toml string to get at server properties. Set
+    # defaults by calling the regular config check method.
+    cfg_ns = ns.dict2ns(toml.loads(cfg_toml))
+    config.check(cfg_ns)
     
     # Get data from $System.OBJ.ExportUDL()
-    data_from_export = get_export(cfg.Server, name)
+    data_from_export = get_export(cfg_ns.Server, name)
     
     # Save for debugging purposes
     if data_from_api != data_from_export:
@@ -99,7 +138,7 @@ def compare_exports(tmp_path, server_toml, get_files, get_config_ns, name):
     
 
 def get_export(svr:ns.Namespace, name:str):
-    """Returns UDL export data for the given item"""
+    """Returns UDL export data for a source item."""
     
     # Authorization information
     auth = (svr.user, svr.password)
@@ -126,7 +165,9 @@ def get_export(svr:ns.Namespace, name:str):
     # Check for errors
     if errors := data['status']['errors']:
         raise RuntimeError(errors[0]['error'])
-    result = '\n'.join(data['result']['content'][0]['result'])
+    
+    # The stored procedure returns everything on one line
+    result = data['result']['content'][0]['result'][0]
     
     # Remove helper class
     query = "DELETE FROM %Dictionary.ClassDefinition WHERE ID = 'Tmp.CII.Tests'"
