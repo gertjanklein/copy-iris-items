@@ -147,6 +147,10 @@ Configuration options are:
   This is mostly useful to reduce CSP license count usage on older
   systems. (CSP licenses are used as items are retrieved using a CSP
   API.)
+* **augment_from** (filename) specifies an external toml file to merge
+  into the current one. It can be used to specify settings used in
+  multiple toml files once. The toml file must have the same structure
+  as the regular one, but does not have to be complete.
 * **disable_eol_fix** (true|false, default false) allows disabling a fix
   that saves the proper number of newlines when exporting CSP and
   routine items. Before version 0.4.7, one final newline was stripped.
@@ -156,6 +160,6 @@ Configuration options are:
 * **disable_class_eol_fix** (true|false, default false) allows, like the
   setting above, disabling a fix that ensures the proper number of
   newlines when exporting classes. On versions 0.5 and below, one final
-  newline was stripped. With this fix, exporting and re-importing does
-  not change the file. Disabling this fix could be useful to prevent
+  newline was stripped. With this fix, the export is compatible with
+  `$System.OBJ.Export()`. Disabling this fix could be useful to prevent
   many whitespace-only changes in an existing repository.

@@ -47,10 +47,6 @@ strip = true
 
 ##### Where and how to save things.
 [Local]
-# Directories which are not an absolut path, will be taken relative to
-# the location of the configuration file. The string {cfgname} will be
-# replaced by the name of the configuration file
-
 # Directory to place source files (class, mac, inc, etc.) in.
 dir = '{cfgname}\src'
 
@@ -73,6 +69,9 @@ subdirs = true
 # Whether to save a file (per connection) with cookies, so that the CSP
 # licence can be retained between runs.
 cookies = false
+
+# Augment/override settings in this file with the one specified here.
+augment_from = ''
 
 
 # ===== Backwards compatibility settings; should not normally

@@ -39,6 +39,9 @@ def get_config() -> ns.Namespace:
     ns.check_default(local, 'logdir', '')
     levels = 'debug,info,warning,error,critical'.split(',')
     ns.check_oneof(local, 'loglevel', levels, 'info')
+    
+    # Merge-in setting from the file specified in augment_from, if any
+    merge_augmented_settings(config)
 
     # Do final setup of logging
     setup_logging(config)
@@ -79,14 +82,20 @@ def get_config() -> ns.Namespace:
 def get_specs(input):
     """ Get project specifications and convert to regular expressions. """
 
-    specs = [ spec for spec in input ]
-
     # Determine the types of items we're interested in
-    types = { 'csp' if '/' in spec else spec.rsplit('.', maxsplit=1)[1] for spec in specs }
-
+    types = set()
+    for spec in input:
+        if '/' in spec:
+            types.add('csp')
+        else:
+            _, ext = splitext(spec)
+            if not ext:
+                raise ConfigurationError(f"Project item specifications need an extension; {spec} doesn't have one.")
+            types.add(ext[1:])
+    
     # Convert specifications to regexes for matching
     regexes = { '+': [], '-': [] }
-    for spec in specs:
+    for spec in input:
         # Exclusion spec?
         if spec[0] == '-':
             spec = spec[1:]
@@ -228,6 +237,25 @@ def setup_logging(config:ns.Namespace):
     logger.handlers.clear()
     logger.handlers.append(logging.FileHandler(name, 'a', 'UTF-8'))
     logger.setLevel(logging.INFO)
+
+
+def merge_augmented_settings(config:ns.Namespace):
+    """ Merges settings from file in setting augment_from, if any """
+    
+    local = ns.get_section(config, 'Local')
+    if local is None:
+        return
+    fname = local._get('augment_from')
+    if fname is None:
+        return
+    if not isabs(fname):
+        fname = join(config.cfgdir, fname)
+    if not exists(fname):
+        raise ConfigurationError(f"augment_from file {local._get('augment_from')} not found")
+    cs = ns.dict2ns(toml.load(fname))
+    # Add/override each key/value in augment_from
+    for k, v in cs._flattened():
+        ns.set_in_path(config, k, v)
 
 
 def unhandled_exception(exc_type, exc_value, exc_traceback):
