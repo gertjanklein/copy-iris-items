@@ -1,3 +1,5 @@
+![Tests](https://github.com/gertjanklein/copy-iris-items/actions/workflows/run-pytest.yml/badge.svg)
+
 # copy-iris-items
 
 Copies items from a remote Caché/IRIS server to a local directory.
