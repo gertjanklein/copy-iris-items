@@ -151,4 +151,9 @@ def is_responsive(url):
     return False
 
 
+@pytest.fixture(scope="session")
+def docker_compose_file(pytestconfig):
+    """ Override to specify where docker-compose.yml is """
+    
+    return join(pytestconfig.rootdir, "docker", "docker-compose.yml")
 
