@@ -7,7 +7,6 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,7 +19,7 @@ jobs:
         python-version: 3.9
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip wheel
         pip install -r requirements_dev.txt
     - name: Test with pytest
       env:
