@@ -125,8 +125,6 @@ def init(config:ns.Namespace, thread_local_stg:threading.local):
 
 
 def cleanup(svr:ns.Namespace):
-    global created
-
     # If we did not create the stored procedure, there's nothing to do here
     if not created:
         return

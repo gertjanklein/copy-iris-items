@@ -42,7 +42,7 @@ def test_change_dirs(tmp_path, get_config_ns):
     
     # Write override toml
     ovr = tmp_path / 'ovr.toml'
-    with open(ovr, 'wt') as f:
+    with open(ovr, 'wt', encoding="UTF-8") as f:
         f.write(OVR)
     
     # Get the parsed and augmented configuration settings
@@ -60,7 +60,7 @@ def test_add_required_section(tmp_path, get_config_ns):
     
     # Write override toml
     ovr = tmp_path / 'ovr.toml'
-    with open(ovr, 'wt') as f:
+    with open(ovr, 'wt', encoding="UTF-8") as f:
         f.write(OVR+SVR)
     
     # If the server section is not merged-in, a configuration error will occur

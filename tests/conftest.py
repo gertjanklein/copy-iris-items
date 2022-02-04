@@ -37,7 +37,7 @@ def get_files():
 
     def get_files(toml:str, tmp_path):
         cfgfile = str(tmp_path / 'cfg.toml')
-        with open(cfgfile, 'wt') as f:
+        with open(cfgfile, 'wt', encoding="UTF-8") as f:
             f.write(toml)
         args = ['copier', cfgfile, '--no-gui']
         with patch('sys.argv', args):
@@ -50,7 +50,7 @@ def get_files():
 def get_config_ns():
     def get_config_ns(toml:str, tmp_path):
         cfgfile = str(tmp_path / 'cfg.toml')
-        with open(cfgfile, 'wt') as f:
+        with open(cfgfile, 'wt', encoding="UTF-8") as f:
             f.write(toml)
         args = ['copier', cfgfile, '--no-gui']
         with patch('sys.argv', args):
@@ -85,7 +85,7 @@ def _open_local():
     name = join(dirname(__file__), 'server.toml')
     if not exists(name):
         return None
-    with open(name) as f:
+    with open(name, encoding="UTF-8") as f:
         return f.read()
 
 def docker_available():
@@ -129,7 +129,7 @@ def iris_service(docker_ip, docker_services):
     """Ensure that HTTP service is up and responsive."""
 
     port = docker_services.port_for("copy-iris-items-testsvr", 52773)
-    url = "http://{}:{}/api/atelier/".format(docker_ip, port)
+    url = f"http://{docker_ip}:{port}/api/atelier/"
     docker_services.wait_until_responsive(
         timeout=120.0, pause=0.5, check=lambda: is_responsive(url)
     )

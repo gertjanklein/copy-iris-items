@@ -112,7 +112,7 @@ def compare_exports(tmp_path, get_files, cfg_toml, name, addline=False):
     assert expect == got, f"Should get {expect}, got {got}"
     
     # Get the export data
-    with open(join(tmp_path, 'src', name), 'rt') as f:
+    with open(join(tmp_path, 'src', name), 'rt', encoding="UTF-8") as f:
         data_from_api = f.read()
     
     # Add a line to the copy-iris-items export, if so requested. This
@@ -131,7 +131,7 @@ def compare_exports(tmp_path, get_files, cfg_toml, name, addline=False):
     
     # Save for debugging purposes
     if data_from_api != data_from_export:
-        with open(join(tmp_path, 'src', name + '2'), 'wt') as f:
+        with open(join(tmp_path, 'src', name + '2'), 'wt', encoding="UTF-8") as f:
             f.write(data_from_export)
     
     assert data_from_api == data_from_export, "Both methods should return the same data"

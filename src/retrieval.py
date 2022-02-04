@@ -30,7 +30,7 @@ def get_modified_items(config:ns.Namespace, itemtype:str):
 
     # Get JSON response
     try:
-        rsp = tls.session.post(url, json=[])
+        rsp = tls.session.post(url, json=[]) # pylint:disable=undefined-variable
     except requests.exceptions.RequestException:
         logging.error(f"Accessing {url}:")
         raise
