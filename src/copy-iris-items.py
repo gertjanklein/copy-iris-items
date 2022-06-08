@@ -299,8 +299,27 @@ def init(config:ns.Namespace):
     # Make sure the server can be reached
     try:
         scheme = 'https' if svr.https else 'http'
-        url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/"
-        tls.session.get(url)
+        # This URL returns namespace information. If it returns a 200 then
+        # we can access the server.
+        url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}"
+        rsp = tls.session.get(url)
+        
+        if rsp.status_code == 404:
+            msg = f"Url {url} returns a 404 (not found).\n" \
+                "Did you specify the correct namespace?\n" \
+                "Is the /api/atelier CSP application enabled?"
+            raise ns.ConfigurationError(msg)
+        
+        if rsp.status_code == 401:
+            msg = f"Url {url} returns a 401 (unauthorized).\n" \
+                "Are the credentials present and correct?"
+            raise ns.ConfigurationError(msg)
+        
+        if rsp.status_code != 200:
+            msg = f"Url {url} returns a {rsp.status_code} ({rsp.reason}).\n" \
+                "Please check your setup."
+            raise ns.ConfigurationError(msg)
+        
     except requests.exceptions.RequestException:
         logging.error(f"Accessing [POST] {url}:") # type: ignore
         raise
