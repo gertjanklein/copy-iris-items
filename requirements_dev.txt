@@ -1,9 +1,12 @@
-wheel
 toml
 lxml
+requests
 pylint
+docker-compose
+coverage
 pytest
 pytest-docker
+pytest-cov
 mypy
 types-requests
 types-toml
