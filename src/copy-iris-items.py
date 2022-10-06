@@ -78,23 +78,6 @@ def run(config):
         msgbox(f"Copied {count} items.")
 
 
-def check_item(specs:Dict[str,List], item:str):
-    """ Checks if a name matches the project specifications """
-
-    # First check exclusion specs
-    for spec in specs['-']:
-        if spec.match(item):
-            return False
-    
-    # Check inclusion spec
-    for spec in specs['+']:
-        if spec.match(item):
-            return True
-    
-    # Not mentioned in any spec: don't include
-    return False
-
-
 def determine_filename(config:ns.Namespace, item:dict):
     """ Determine output filename for an item """
 
