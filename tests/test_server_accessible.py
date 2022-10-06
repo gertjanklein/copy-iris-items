@@ -20,7 +20,7 @@ items = ['Strix.Std.*.cls']
 
 @pytest.mark.usefixtures("reload_modules")
 def test_404(tmp_path, server_toml, get_files):
-    """Test loading a package """
+    """Test error for non-existent namespace"""
     
     svr_dict = toml.loads(server_toml)
     svr_dict['Server']['namespace'] += '_____'
@@ -34,7 +34,7 @@ def test_404(tmp_path, server_toml, get_files):
     
 
 def test_401(tmp_path, server_toml, get_files):
-    """Test loading a package """
+    """Test error for invalid user"""
     
     svr_dict = toml.loads(server_toml)
     svr_dict['Server']['user'] = "i don't exist"
