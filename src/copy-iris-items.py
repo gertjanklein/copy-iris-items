@@ -44,7 +44,7 @@ def run(config):
 
     # Log appends; create visible separation for this run
     now = str(datetime.datetime.now())
-    logging.info(f"\n\n===== Starting sync at {now.split('.')[0]}")
+    logging.info(f"\n\n===== Starting sync at {now.split('.')[0]}") #pylint:disable=C0207
 
     # Get list of all items we're interested in
     items: List[dict] = []
