@@ -1,5 +1,6 @@
 from importlib import import_module
 from typing import Any
+import random
 
 import toml
 import pytest
@@ -36,8 +37,9 @@ def test_404(tmp_path, server_toml, get_files):
 def test_401(tmp_path, server_toml, get_files):
     """Test error for invalid user"""
     
+    name = f"no_such_user_{random.randrange(100)}"
     svr_dict = toml.loads(server_toml)
-    svr_dict['Server']['user'] = "i don't exist"
+    svr_dict['Server']['user'] = name
     svr = toml.dumps(svr_dict)
     
     cfg = f"{CFG.format(dir=tmp_path)}\n{svr}"
