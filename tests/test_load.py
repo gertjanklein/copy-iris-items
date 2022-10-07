@@ -12,23 +12,72 @@ copier = import_module("copy-iris-items") # type: Any
 CFG = """
 [Local]
 dir = '{dir}/src'
+cspdir = '{dir}/csp'
 logdir = '{dir}'
 [Project]
-items = ['Strix.Std.*.cls']
+items = [{spec}]
 """
 
 
 @pytest.mark.usefixtures("reload_modules")
 def test_load(tmp_path, server_toml, get_files):
-    """Test loading a package """
+    """
+    Test loading all classes in a package
+    """
     
-    cfg = CFG.format(dir=tmp_path)
+    spec = "'Strix.Std.*.cls'"
+    cfg = CFG.format(dir=tmp_path, spec=spec)
     toml = f"{cfg}\n{server_toml}"
     get_files(toml, tmp_path)
     expect = 'Strix.Std.EAN.cls,Strix.Std.IBAN.cls,Strix.Std.VATNumber.cls'
     got = list_files(join(tmp_path, 'src'))
     check_files(expect, got)
     
+
+@pytest.mark.usefixtures("reload_modules")
+def test_exclude_single(tmp_path, server_toml, get_files):
+    """
+    Test excluding a class
+    """
+    
+    spec = "'Strix.Std.*.cls', '-Strix.Std.IBAN.cls'"
+    cfg = CFG.format(dir=tmp_path, spec=spec)
+    toml = f"{cfg}\n{server_toml}"
+    get_files(toml, tmp_path)
+    expect = 'Strix.Std.EAN.cls,Strix.Std.VATNumber.cls'
+    got = list_files(join(tmp_path, 'src'))
+    check_files(expect, got)
+    
+
+@pytest.mark.usefixtures("reload_modules")
+def test_load_csp(tmp_path, server_toml, get_files):
+    """
+    Test loading a CSP item
+    """
+    
+    spec = "'Strix.Std.EAN.cls', '/csp/user/menu.csp'"
+    cfg = CFG.format(dir=tmp_path, spec=spec)
+    toml = f"{cfg}\n{server_toml}"
+    get_files(toml, tmp_path)
+    expect = 'Strix.Std.EAN.cls,csp/user/menu.csp'
+    got = list_files(join(tmp_path, 'src')) + list_files(join(tmp_path, 'csp'))
+    check_files(expect, got)
+
+
+@pytest.mark.usefixtures("reload_modules")
+def test_load_csp_wildcard(tmp_path, server_toml, get_files):
+    """
+    Test loading CSP items with a wildcard spec
+    """
+    
+    spec = "'/csp/user/*.csp'"
+    cfg = CFG.format(dir=tmp_path, spec=spec)
+    toml = f"{cfg}\n{server_toml}"
+    get_files(toml, tmp_path)
+    expect = 'csp/user/showsource.csp,csp/user/menu.csp'
+    got = list_files(join(tmp_path, 'csp'))
+    check_files(expect, got)
+
 
     # =====
 
