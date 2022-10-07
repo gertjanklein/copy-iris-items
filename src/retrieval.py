@@ -27,7 +27,7 @@ def get_modified_items(config:ns.Namespace, itemtype:str):
     scheme = 'https' if svr.https else 'http'
     generated = '1' if config.Project.generated else '0' # pylint:disable=unused-variable
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/" \
-        "{svr.namespace}/modified/{itemtype}?generated={generated}"
+        f"{svr.namespace}/modified/{itemtype}?generated={generated}"
 
     # Get JSON response
     try:
