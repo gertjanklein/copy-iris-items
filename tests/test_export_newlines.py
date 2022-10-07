@@ -149,17 +149,17 @@ def get_export(svr:ns.Namespace, name:str):
     
     # Remove an existing helper class (regardless of whether it exists)
     query = "DELETE FROM %Dictionary.ClassDefinition WHERE ID = 'Tmp.CII.Tests'"
-    requests.post(qurl, json={"query":query}, auth=auth)
+    requests.post(qurl, json={"query":query}, auth=auth, timeout=60)
     
     # Create the stored procedure
-    rsp = requests.post(qurl, json={"query":CREATE_EXPORT_PROC}, auth=auth)
+    rsp = requests.post(qurl, json={"query":CREATE_EXPORT_PROC}, auth=auth, timeout=60)
     data = rsp.json()
     if errors := data['status']['errors']:
         raise RuntimeError(errors[0]['error'])
     
     # Get export for the requested name
     query = f"SELECT Tmp_CII.GetExport('{name}') AS result"
-    rsp = requests.post(qurl, json={"query":query}, auth=auth)
+    rsp = requests.post(qurl, json={"query":query}, auth=auth, timeout=60)
     data = rsp.json()
 
     # Check for errors
@@ -171,6 +171,6 @@ def get_export(svr:ns.Namespace, name:str):
     
     # Remove helper class
     query = "DELETE FROM %Dictionary.ClassDefinition WHERE ID = 'Tmp.CII.Tests'"
-    requests.post(qurl, json={"query":query}, auth=auth)
+    requests.post(qurl, json={"query":query}, auth=auth, timeout=60)
     
     return result

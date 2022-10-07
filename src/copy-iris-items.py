@@ -23,7 +23,8 @@ tls = threading.local()
 
 
 def main():
-    # Get configuration and handle command line arguments
+    """ Get configuration and handle command line arguments """
+    
     config = get_config()
     run(config)
 
@@ -44,7 +45,7 @@ def run(config):
 
     # Log appends; create visible separation for this run
     now = str(datetime.datetime.now())
-    logging.info(f"\n\n===== Starting sync at {now.split('.')[0]}") #pylint:disable=C0207
+    logging.info("\n\n===== Starting sync at %s", now.split('.')[0]) #pylint:disable=C0207
 
     # Get list of all items we're interested in
     items: List[dict] = []
@@ -142,6 +143,8 @@ def save_deployable_settings(config:ns.Namespace):
 
 
 def save_lookup_tables(config:ns.Namespace):
+    """ Saves the requested Ensemble lookup tables to file """
+    
     logging.info('Loading list of lookup tables')
     tables = data_handler.list_lookup_tables(config.Server, config.Project.lookup)
     if not tables:
@@ -156,11 +159,11 @@ def save_lookup_tables(config:ns.Namespace):
         if not table.endswith('.LUT'):
             table = table[:-4] + '.LUT'
 
-        logging.info(f"Retrieving and saving {table}")
+        logging.info("Retrieving and saving %s", table)
 
         data = data_handler.get_export(config.Server, table)
         if not data:
-            logging.info(f"  {table} contains no data, skipping.")
+            logging.info("  %s contains no data, skipping.", table)
             continue
         
         # Remove timestamp and version from export
@@ -225,7 +228,7 @@ def save_items_parallel(config:ns.Namespace, items:List, threads:int):
 def save_item(config:ns.Namespace, item:Dict[str,Any]):
     """ Retrieves an item and saves it to disk """
 
-    logging.info(f"Retrieving and saving {item['name']}")
+    logging.info("Retrieving and saving %s", item['name'])
 
     data = ret.retrieve_item(config, item)
     fname = determine_filename(config, item)
@@ -253,7 +256,7 @@ def save_item(config:ns.Namespace, item:Dict[str,Any]):
         raise ConfigurationError(msg) from None
     
     except Exception:
-        logging.error(f"\nException detected writing to file {fname}")
+        logging.error("\nException detected writing to file %s", fname)
         raise
 
     # Set modified date/time to that of item in IRIS
@@ -272,6 +275,8 @@ def set_file_datetime(filename:str, timestamp:str):
 
 
 def init(config:ns.Namespace):
+    """ Set up threading/session and check server access """
+    
     # Set up the main thread requests session, and give it our cookie jar
     svr = config.Server
     tls.session = requests.Session()
@@ -304,7 +309,7 @@ def init(config:ns.Namespace):
             raise ns.ConfigurationError(msg)
         
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing [POST] {url}:") # type: ignore
+        logging.error("Accessing [POST] %s:", url) # type: ignore
         raise
     
     # Save cookies for reuse if we call the same server quickly again

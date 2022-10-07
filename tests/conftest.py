@@ -48,6 +48,10 @@ def get_files():
 
 @pytest.fixture
 def get_config_ns():
+    """"
+    Converts the configuration to a namespace
+    """
+    
     def get_config_ns(toml:str, tmp_path):
         cfgfile = str(tmp_path / 'cfg.toml')
         with open(cfgfile, 'wt', encoding="UTF-8") as f:
@@ -103,13 +107,13 @@ def docker_available():
 if _server_toml := _open_local():
     # A local toml server definition is available; use that
     @pytest.fixture(scope="session")
-    def server_toml(): #type: ignore
+    def server_toml(): # type: ignore # pylint:disable=missing-function-docstring
         return _server_toml
 
 elif docker_available():
     # Docker available; spin up a temporary IRIS
     @pytest.fixture(scope="session")
-    def server_toml(iris_service): #type: ignore
+    def server_toml(iris_service): # type: ignore # pylint:disable=missing-function-docstring
         ip, port = iris_service
         toml = f"\n[Server]\nhost='{ip}'\nport='{port}'\n" \
             "namespace='user'\nuser='_SYSTEM'\npassword='SYS'\n"
@@ -118,7 +122,7 @@ elif docker_available():
 else:
     # No locat server definition and no Docker; skip tests
     @pytest.fixture(scope="session")
-    def server_toml(): #type: ignore
+    def server_toml(): # type: ignore # pylint:disable=missing-function-docstring
         pytest.skip("Docker not available")
 
 

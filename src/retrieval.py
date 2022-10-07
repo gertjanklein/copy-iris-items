@@ -20,19 +20,20 @@ tls:threading.local
 def get_modified_items(config:ns.Namespace, itemtype:str):
     """ Retrieves all items of specified type from the server """
 
-    logging.info(f"Retrieving available items of type {itemtype}")
+    logging.info("Retrieving available items of type %s", itemtype)
 
     # Assemble URL and create request
     svr = config.Server
     scheme = 'https' if svr.https else 'http'
-    generated = '1' if config.Project.generated else '0'
-    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/modified/{itemtype}?generated={generated}"
+    generated = '1' if config.Project.generated else '0' # pylint:disable=unused-variable
+    url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/" \
+        "{svr.namespace}/modified/{itemtype}?generated={generated}"
 
     # Get JSON response
     try:
         rsp = tls.session.post(url, json=[]) # pylint:disable=undefined-variable
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing {url}:")
+        logging.error("Accessing %s:", url)
         raise
     data = rsp.json()
 
@@ -47,7 +48,7 @@ def get_modified_items(config:ns.Namespace, itemtype:str):
 def get_items_for_type(config:ns.Namespace, itemtype:str):
     """ Retrieves all items of a given type from the server """
 
-    logging.info(f"Retrieving available {itemtype} items")
+    logging.info("Retrieving available %s items", itemtype)
     
     # Assemble URL
     svr = config.Server
@@ -58,7 +59,7 @@ def get_items_for_type(config:ns.Namespace, itemtype:str):
     try:
         rsp = tls.session.get(url)
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing {url}:")
+        logging.error("Accessing %s:", url)
         raise
     data = rsp.json()
     
@@ -72,14 +73,18 @@ def extract_items(config:ns.Namespace, result:List, items:List):
     generated = config.Project.generated
     for db in result:
         # Skip stuff coming from system databases
-        if not mapped and db.get('dbsys', False): continue
+        if not mapped and db.get('dbsys', False):
+            continue
         # Check items ('docs') in this DB
         for doc in db['docs']:
             # Skip generated (if so configured) and deployed documents
-            if not generated and doc.get('gen', False): continue
-            if doc.get('depl', False): continue
+            if not generated and doc.get('gen', False):
+                continue
+            if doc.get('depl', False):
+                continue
             # Skip item if it doesn't match the project spec
-            if not check_item(config.itemsrx, doc['name']): continue
+            if not check_item(config.itemsrx, doc['name']):
+                continue
             # Remove irrelevant data
             del doc['gen']
             del doc['depl']
@@ -91,7 +96,8 @@ def extract_csp_items(config:ns.Namespace, result:List, items:List):
     
     specs = config.itemsrx
     for item in result:
-        if not check_item(specs, item['name']): continue
+        if not check_item(specs, item['name']):
+            continue
         del item['db']
         del item['upd']
         items.append(item)
@@ -104,7 +110,8 @@ def retrieve_item(config:ns.Namespace, item:dict):
 
     # CSP items start with a slash; remove it
     name = item['name']
-    if name[0] == '/': name = name[1:]
+    if name[0] == '/':
+        name = name[1:]
 
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/doc/{name}"
@@ -113,7 +120,7 @@ def retrieve_item(config:ns.Namespace, item:dict):
     try:
         rsp = tls.session.get(url)
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing {url}:")
+        logging.error("Accessing %s:", url)
         raise
     data = rsp.json()
     
@@ -161,16 +168,21 @@ def check_item(specs:Dict[str,List], item:str):
 
 
 def init(auth, cookie_data):
+    """ Initialize tls and cookie jar """
+    
     tls.session = requests.Session()
     if auth[0]:
         tls.session.auth = auth
     if cookie_data:
         jar = http.cookiejar.LWPCookieJar()
         datastream = StringIO(cookie_data)
-        jar._really_load(datastream, "<copy>", ignore_discard=True, ignore_expires=False) # type: ignore
+        jar._really_load(datastream, "<copy>", ignore_discard=True, # type: ignore
+            ignore_expires=False)
         tls.session.cookies = jar # type: ignore
 
 def cleanup():
+    """ Cleanup tls """
+    
     if hasattr(tls, "session"):
         tls.session.close()
         # Slight delay so other threads get assigned a cleanup task as well

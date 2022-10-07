@@ -28,6 +28,8 @@ tls:threading.local
 
 
 def get_export(svr:ns.Namespace, name:str):
+    """ Use the helper class to retrieve the export """
+    
     # URL for query actions
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
@@ -39,7 +41,7 @@ def get_export(svr:ns.Namespace, name:str):
         rsp = session.post(url, json={"query":query})
         data = rsp.json()
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing [POST] {url}:")
+        logging.error("Accessing [POST] %s:", url)
         raise
 
     # Check for errors
@@ -52,6 +54,8 @@ def get_export(svr:ns.Namespace, name:str):
 
 
 def list_lookup_tables(svr:ns.Namespace, specs:list):
+    """ Get list of lookup tables matching specs defined at the server """
+    
     # URL for query actions
     scheme = 'https' if svr.https else 'http'
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
@@ -71,7 +75,7 @@ def list_lookup_tables(svr:ns.Namespace, specs:list):
         rsp = session.post(url, json=json_out)
         data = rsp.json()
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing [POST] {url}:")
+        logging.error("Accessing [POST] %s:", url)
         raise
     
     # Check for errors
@@ -85,7 +89,9 @@ def list_lookup_tables(svr:ns.Namespace, specs:list):
 
 
 def init(config:ns.Namespace, thread_local_stg:threading.local):
-    global created, tls
+    """ Set up helper class """
+    
+    global created, tls # pylint:disable=global-statement
 
     tls = thread_local_stg
     svr = config.Server
@@ -102,7 +108,7 @@ def init(config:ns.Namespace, thread_local_stg:threading.local):
         rsp = session.post(url, json={"query":query})
         data = rsp.json()
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing [POST] {url}:")
+        logging.error("Accessing [POST] %s:", url)
         raise
 
     # If the class still exists, we're done
@@ -114,7 +120,7 @@ def init(config:ns.Namespace, thread_local_stg:threading.local):
         rsp = session.post(url, json={"query":CREATE_EXPORT_PROC})
         data = rsp.json()
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing [POST] {url}:")
+        logging.error("Accessing [POST] %s:", url)
         raise
     
     errors = data['status']['errors']
@@ -125,6 +131,8 @@ def init(config:ns.Namespace, thread_local_stg:threading.local):
 
 
 def cleanup(svr:ns.Namespace):
+    """ Remove the helper class, if we've created it """
+    
     # If we did not create the stored procedure, there's nothing to do here
     if not created:
         return
@@ -140,13 +148,13 @@ def cleanup(svr:ns.Namespace):
         rsp = session.post(url, json={"query":query})
         data = rsp.json()
     except requests.exceptions.RequestException:
-        logging.error(f"Accessing [POST] {url}:")
+        logging.error("Accessing [POST] %s:", url)
         raise
     
     # If that returned errors, don't raise but do add a warning to the log
     errors = data['status']['errors']
     if errors:
-        logging.warning('Error cleaning up stored procedure:' + '\n'.join(errors))
+        logging.warning('Error cleaning up stored procedure:\n%s', '\n'.join(errors))
 
 
 def get_session(svr:ns.Namespace):

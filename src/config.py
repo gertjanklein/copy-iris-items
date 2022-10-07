@@ -16,6 +16,9 @@ from namespace import ConfigurationError
 
 
 def get_config() -> ns.Namespace:
+    """
+    Creates and returns the configuration namespace
+    """
 
     # Get configuration filename from commandline
     args = parse_args()
@@ -90,7 +93,8 @@ def get_specs(input):
         else:
             _, ext = splitext(spec)
             if not ext:
-                raise ConfigurationError(f"Project item specifications need an extension; {spec} doesn't have one.")
+                msg = f"Project item specifications need an extension; {spec} doesn't have one."
+                raise ConfigurationError(msg)
             types.add(ext[1:])
     
     # Convert specifications to regexes for matching
@@ -212,7 +216,8 @@ def setup_logging(config:ns.Namespace):
 
     # If no logdir specified, setup is already complete
     logdir = config.Local._get('logdir')
-    if not logdir: return
+    if not logdir:
+        return
 
     # Determine filename (without path)
     base, ext = splitext(basename(config.cfgfile))
@@ -266,7 +271,8 @@ def unhandled_exception(exc_type, exc_value, exc_traceback):
         logging.error("\n%s", msg)
     else:
         msg = f"An error occurred; please see the log file for details.\n\n{exc_value}"
-        logging.exception("\n##### Unhandled exception:", exc_info=(exc_type, exc_value, exc_traceback))
+        exc_info = (exc_type, exc_value, exc_traceback)
+        logging.exception("\n##### Unhandled exception:", exc_info=exc_info)
     msgbox(f"An error occurred; please see the log file for details.\n\n{exc_value}", True)
     sys.exit(1)
 
