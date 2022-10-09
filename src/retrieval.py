@@ -129,13 +129,13 @@ def retrieve_item(config:ns.Namespace, item:dict):
 
     # CSP/RTN text contents is missing a trailing newline; fix this unless
     # the configuration says no.
-    nofix = config.Local.disable_eol_fix
+    nofix = config.Local.compatibility == 'vscode'
     if not nofix and result['cat'] in ('CSP', 'RTN') and not result['enc']:
         content.append('')
     
     # The join below will also remove one line from class exports. Fix that
     # unless turned off.
-    nofix = config.Local.disable_class_eol_fix
+    nofix = config.Local.compatibility == 'vscode'
     if not nofix and result['cat'] == 'CLS' and not result['enc']:
         content.append('')
     

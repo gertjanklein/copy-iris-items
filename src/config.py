@@ -186,9 +186,15 @@ def check(config:ns.Namespace):
     ns.check_default(local, 'cookies', False)
     ns.check_encoding(local, 'encoding', 'UTF-8')
     
-    # Backwards compatibility settings
-    ns.check_default(local, 'disable_eol_fix', False)
-    ns.check_default(local, 'disable_class_eol_fix', False)
+    # Output compatibility setting
+    ns.check_oneof(local, 'compatibility', ('vscode', 'export'), 'export')
+    
+    # Warn about now unused settings
+    if 'disable_eol_fix' in local or 'disable_class_eol_fix' in local:
+        msg = "..._eol_fix settings are no longer supported. Use 'compatibility'" \
+            " setting instead. Value: false -> 'export', true -> 'vscode'."
+        raise ConfigurationError(msg)
+    
 
 
 # =====

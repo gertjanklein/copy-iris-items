@@ -62,13 +62,30 @@ def test_class_newlines(tmp_path, server_toml, get_files):
     compare_exports(tmp_path, get_files, cfg, name)
     
 @pytest.mark.usefixtures("reload_modules")
-def test_class_newlines_prev(tmp_path, server_toml, get_files):
-    """ Tests classes with backwards compatibility setting """
+def test_class_newlines_vscode(tmp_path, server_toml, get_files):
+    """ Tests classes with VS Code compatibility setting """
     
     name = 'Strix.Std.EAN.cls'
     
     cfg = CFG.format(dir=tmp_path, name=name)
-    cfg = f"{cfg}\ndisable_class_eol_fix=true\n{server_toml}"
+    cfg = f"{cfg}\ncompatibility='vscode'\n{server_toml}"
+    
+    compare_exports(tmp_path, get_files, cfg, name, True)
+    
+@pytest.mark.usefixtures("reload_modules")
+def test_class_newlines_vscode_aug(tmp_path, server_toml, get_files):
+    """ Tests compatibility setting from augment config file """
+    
+    name = 'Strix.Std.EAN.cls'
+    
+    aug = "[Local]\ncompatibility='vscode'\n"
+    aug_name = tmp_path / 'aug.toml'
+    with open(aug_name, 'wt', encoding='UTF8') as f:
+        f.write(aug)
+    
+    cfg = '\n'.join([CFG.format(dir=tmp_path, name=name),
+        f"augment_from='{aug_name}'",
+        server_toml ])
     
     compare_exports(tmp_path, get_files, cfg, name, True)
     
@@ -86,13 +103,13 @@ def test_inc_newlines(tmp_path, server_toml, get_files):
     compare_exports(tmp_path, get_files, cfg, name)
     
 @pytest.mark.usefixtures("reload_modules")
-def test_inc_newlines_prev(tmp_path, server_toml, get_files):
-    """ Tests include files with backwards compatibility setting """
+def test_inc_newlines_vscode(tmp_path, server_toml, get_files):
+    """ Tests include files with VS Code compatibility setting """
     
     name = 'Strix.inc'
     
     cfg = CFG.format(dir=tmp_path, name=name)
-    cfg = f"{cfg}\ndisable_eol_fix=true\n{server_toml}"
+    cfg = f"{cfg}\ncompatibility='vscode'\n{server_toml}"
     
     compare_exports(tmp_path, get_files, cfg, name, True)
     
