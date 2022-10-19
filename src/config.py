@@ -257,11 +257,11 @@ def merge_augmented_settings(config:ns.Namespace):
     if local is None:
         return
     fname = local._get('augment_from')
-    if fname is None:
+    if fname == '' or fname is None:
         return
     if not isabs(fname):
         fname = join(config.cfgdir, fname)
-    if not exists(fname):
+    if not exists(fname) or not isfile(fname):
         raise ConfigurationError(f"augment_from file {local._get('augment_from')} not found")
     cs = ns.dict2ns(toml.load(fname))
     # Add/override each key/value in augment_from
