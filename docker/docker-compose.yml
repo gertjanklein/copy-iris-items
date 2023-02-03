@@ -3,7 +3,9 @@ services:
   copy-iris-items-testsvr:
     build:
       context: .
-    command: --check-caps false
+    command:
+    - --check-caps false
+    - --ISCAgent false
     ports:
       - 12000-12500:52773
 

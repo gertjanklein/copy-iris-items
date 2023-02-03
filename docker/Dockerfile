@@ -3,6 +3,8 @@ ARG IMAGE=containers.intersystems.com/intersystems/iris-community:2022.2.0.368.0
 
 FROM $IMAGE
 
+CMD ["--ISCAgent false"]
+
 # The Strix commit to load files to use for testing from
 ARG COMMIT="2a547dc4968e1e0cc986df7a959d6d9ce46917f1"
 
