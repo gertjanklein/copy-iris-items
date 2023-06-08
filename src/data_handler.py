@@ -10,7 +10,7 @@ import namespace as ns
 # $System.OBJ.Export. Note that versions before IRIS don't support
 # nested curly braces in the code, hence the use of For instead of While.
 CREATE_EXPORT_PROC = """
-CREATE PROCEDURE GetExport(name SYSNAME) FOR Tmp.CII.Procs RETURNS CHAR LANGUAGE OBJECTSCRIPT
+CREATE PROCEDURE GetExport(name SYSNAME) FOR TmpCII.Helper RETURNS CHAR LANGUAGE OBJECTSCRIPT
 {
   Set Stream = ##class(%Stream.TmpCharacter).%New()
   Do $System.OBJ.ExportToStream(name, Stream, "d")
@@ -35,7 +35,7 @@ def get_export(svr:ns.Namespace, name:str):
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
     
     # Get export for the requested name
-    query = f"SELECT Tmp_CII.GetExport('{name}') AS result"
+    query = f"SELECT TmpCII.GetExport('{name}') AS result"
     try:
         session = get_session(svr)
         rsp = session.post(url, json={"query":query})
@@ -142,7 +142,7 @@ def cleanup(svr:ns.Namespace):
     url = f"{scheme}://{svr.host}:{svr.port}/api/atelier/v1/{svr.namespace}/action/query"
     
     # Drop the stored procedure we created
-    query = "DROP PROCEDURE Tmp_CII.GetExport"
+    query = "DROP PROCEDURE TmpCII.GetExport"
     try:
         session = get_session(svr)
         rsp = session.post(url, json={"query":query})
